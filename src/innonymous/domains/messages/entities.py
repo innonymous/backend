@@ -35,3 +35,10 @@ class MessageEntity:
     @validator("updated_at", "created_at", always=True)
     def __validate_datetime(cls, value: datetime) -> datetime:
         return value.astimezone(tz=timezone.utc)
+
+
+@dataclass
+class MessageUpdateEntity:
+    id: UUID = Field()  # noqa: A003
+    chat: UUID = Field()
+    body: MessageTextBodyEntity | MessageFilesBodyEntity | None = Field(default=None, discriminator="type")

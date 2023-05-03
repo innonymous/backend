@@ -20,7 +20,7 @@ class UsersError(InnonymousError):
     pass
 
 
-class UsersAlreadyExistsError(InnonymousError):
+class UsersAlreadyExistsError(UsersError):
     __message__ = "User already exists."
 
     def __init__(self, *, id_: UUID | None = None, alias: str | None = None, message: str | None = None) -> None:
@@ -37,7 +37,7 @@ class UsersAlreadyExistsError(InnonymousError):
         return self._attributes["alias"]
 
 
-class UsersSerializingError(InnonymousError):
+class UsersSerializingError(UsersError):
     __message__ = "Cannot serialize entity."
 
     def __init__(self, *, entity: UserEntity | None = None, message: str | None = None) -> None:
@@ -49,7 +49,7 @@ class UsersSerializingError(InnonymousError):
         return self._attributes["entity"]
 
 
-class UsersDeserializingError(InnonymousError):
+class UsersDeserializingError(UsersError):
     __message__ = "Cannot deserialize entity."
 
     def __init__(self, *, entity: dict[str, Any] | None = None, message: str | None = None) -> None:
@@ -61,7 +61,7 @@ class UsersDeserializingError(InnonymousError):
         return self._attributes["entity"]
 
 
-class UsersNotFoundError(InnonymousError):
+class UsersNotFoundError(UsersError):
     __message__ = "User not found."
 
     def __init__(self, *, id_: UUID | None = None, alias: str | None = None, message: str | None = None) -> None:
@@ -97,5 +97,5 @@ class UsersTransactionError(UsersNotFoundError):
         return self._attributes["updated_at"]
 
 
-class UsersInvalidCredentialsError(InnonymousError):
+class UsersInvalidCredentialsError(UsersError):
     __message__ = "Credentials are invalid."

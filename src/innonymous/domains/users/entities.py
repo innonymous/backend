@@ -23,8 +23,8 @@ class UserEntity:
 @dataclass
 class UserUpdateEntity:
     id: UUID = Field()  # noqa: A003
-    alias: str | None = Field(regex=r"^\w{5,32}$")
-    password: str | None = Field(regex=r"^.{8,64}$")
+    alias: str | None = Field(default=None, regex=r"^\w{5,32}$")
+    password: str | None = Field(default=None, regex=r"^.{8,64}$")
 
 
 @dataclass

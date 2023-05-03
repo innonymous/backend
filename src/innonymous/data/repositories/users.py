@@ -29,11 +29,11 @@ class UsersRepository(AsyncLazyObject):
         self.__storage = storage
 
         try:
-            self.__collection = storage.client[collection]
+            self.__collection = self.__storage.client[collection]
 
             await self.__collection.create_indexes(
                 [
-                    IndexModel((("id", ASCENDING),), name="users_id_idx", unique=True),
+                    IndexModel((("id", ASCENDING),), name="chats_id_idx", unique=True),
                     IndexModel(
                         (("alias", ASCENDING),),
                         name="users_alias_idx",
@@ -49,7 +49,7 @@ class UsersRepository(AsyncLazyObject):
             )
 
         except Exception as exception:
-            message = f"Cannot initialize database: {exception}"
+            message = f"Cannot initialize collection: {exception}"
             raise UsersError(message) from exception
 
     async def get(self, *, id_: UUID | None = None, alias: str | None = None) -> UserEntity | None:
@@ -87,7 +87,7 @@ class UsersRepository(AsyncLazyObject):
 
     async def update(self, entity: UserEntity, *, updated_at: datetime | None = None) -> None:
         serialized = self.__serialize(entity)
-        query = self.__get_query(updated_at=updated_at)
+        query = self.__get_query(id_=entity.id, updated_at=updated_at)
 
         try:
             result = await self.__collection.update_one(query, {"$set": serialized})
@@ -145,8 +145,6 @@ class UsersRepository(AsyncLazyObject):
         try:
             serialized = asdict(entity)
             serialized["id"] = serialized["id"].hex
-            serialized["updated_at"] = serialized["updated_at"]
-
             return serialized
 
         except Exception as exception:
