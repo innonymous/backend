@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "innonymous"
-version = "1.0.0"
+version = "2.0.0"
 packages = [{ include = "innonymous", from ="src"}]
 description = "A lightweight and fast anonymous chat."
 repository = "https://github.com/innonymous/backend"
