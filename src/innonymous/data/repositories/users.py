@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
@@ -49,7 +49,8 @@ class UsersRepository(AsyncLazyObject):
             raise UsersError(message) from exception
 
     async def get(self, *, id_: UUID | None = None, alias: str | None = None) -> UserEntity | None:
-        if (id_ is None) != (alias is None):
+        # Avoid providing both id and alias or providing None.
+        if (id_ is None) == (alias is None):
             message = "You should provide id or alias."
             raise UsersError(message)
 
@@ -71,7 +72,7 @@ class UsersRepository(AsyncLazyObject):
         serialized = self.__serialize(entity)
 
         try:
-            await self.__collection.insert(serialized)
+            await self.__collection.insert_one(serialized)
 
         # TODO: add exceptions for duplicated alias or id.
         except Exception as exception:
@@ -80,20 +81,36 @@ class UsersRepository(AsyncLazyObject):
 
     async def update(self, entity: UserEntity, *, updated: datetime | None = None) -> None:
         serialized = self.__serialize(entity)
-        query = self.__get_query(id_=entity.id, updated=updated)
+        query = self.__get_query(updated=updated)
 
         try:
-            result = await self.__collection.update_one(query, serialized)
+            result = await self.__collection.update_one(query, {"$set": serialized})
 
         # TODO: add exceptions for duplicated alias or id.
         except Exception as exception:
             message = f"Cannot perform updating: {exception}"
             raise UsersError(message) from exception
 
-        if result.modified_count == 0 and updated is not None:
+        # Success.
+        if result.modified_count > 0:
+            return
+
+        if updated is not None:
             raise UsersTransactionError(id_=entity.id, alias=entity.alias, updated=updated)
 
         raise UsersNotFoundError(id_=entity.id, alias=entity.alias)
+
+    async def delete(self, id_: UUID) -> bool:
+        query = self.__get_query(id_=id_)
+
+        try:
+            result = await self.__collection.delete_one(query)
+
+        except Exception as exception:
+            message = f"Cannot perform deleting: {exception}"
+            raise UsersError(message) from exception
+
+        return result.deleted_count > 0
 
     async def shutdown(self) -> None:
         await self.__storage.shutdown()
@@ -120,6 +137,8 @@ class UsersRepository(AsyncLazyObject):
         try:
             serialized = asdict(entity)
             serialized["id"] = serialized["id"].hex
+            serialized["updated"] = serialized["updated"]
+
             return serialized
 
         except Exception as exception:
@@ -128,6 +147,7 @@ class UsersRepository(AsyncLazyObject):
     @staticmethod
     def __deserialize(entity: dict[str, Any]) -> UserEntity:
         try:
+            entity["updated"] = entity["updated"].replace(tzinfo=timezone.utc)
             return UserEntity(**entity)
 
         except Exception as exception:

@@ -80,4 +80,3 @@ async def mongodb_storage(mongodb_url: str) -> MongoDBStorage:
     async with MongoDBStorage(mongodb_url) as storage:
         # Drop configured database.
         await storage.client.client.drop_database(storage.client.name)
-

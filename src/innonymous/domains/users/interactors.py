@@ -70,6 +70,13 @@ class UsersInteractor:
 
         return new_user_entity
 
+    async def delete(self, id_: UUID) -> None:
+        if not await self.__repository.delete(id_):
+            raise UsersNotFoundError(id_=id_)
+
+    async def shutdown(self) -> None:
+        await self.__repository.shutdown()
+
     @classmethod
     async def __derive_scrypt(cls, salt: bytes, password: str) -> bytes:
         try:
