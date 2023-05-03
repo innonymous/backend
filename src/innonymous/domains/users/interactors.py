@@ -71,21 +71,21 @@ class UsersInteractor:
         return new_user_entity
 
     @classmethod
-    async def __derive_scrypt(cls, salt: bytes, secret: str) -> bytes:
+    async def __derive_scrypt(cls, salt: bytes, password: str) -> bytes:
         try:
             # Run in thread to avoid any blocking.
-            return await get_running_loop().run_in_executor(None, cls.__get_scrypt(salt).derive, secret.encode())
+            return await get_running_loop().run_in_executor(None, cls.__get_scrypt(salt).derive, password.encode())
 
         except Exception as exception:
             message = "Cannot derive scrypt."
             raise UsersError(message) from exception
 
     @classmethod
-    async def __verify_scrypt(cls, salt: bytes, secret: str, expected: bytes) -> None:
+    async def __verify_scrypt(cls, salt: bytes, password: str, expected: bytes) -> None:
         try:
             # Run in thread to avoid any blocking.
             return await get_running_loop().run_in_executor(
-                None, cls.__get_scrypt(salt).verify, secret.encode(), expected
+                None, cls.__get_scrypt(salt).verify, password.encode(), expected
             )
 
         except Exception as exception:

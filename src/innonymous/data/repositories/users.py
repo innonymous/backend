@@ -95,6 +95,9 @@ class UsersRepository(AsyncLazyObject):
 
         raise UsersNotFoundError(id_=entity.id, alias=entity.alias)
 
+    async def shutdown(self) -> None:
+        await self.__storage.shutdown()
+
     @staticmethod
     def __get_query(
         *, id_: UUID | None = None, alias: str | None = None, updated: datetime | None = None
