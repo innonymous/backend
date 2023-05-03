@@ -1,0 +1,192 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "innonymous"
+version = "1.0.0"
+packages = [{ include = "innonymous", from ="src"}]
+description = "A lightweight and fast anonymous chat."
+repository = "https://github.com/innonymous/backend"
+authors = [
+    "Ivan Izmailov <smthngslv@optic.xyz>",
+    "DOCtorActoAntohich <doctoractoantohich@gmail.com>",
+    "Vladislav Safonov <ntdesmond@gmail.com>",
+    "Andrey Khoroshavin <a.khoroshavin@innopolis.university>",
+]
+
+[tool.poetry.dependencies]
+python = "==3.10.*"
+pydantic = {extras = ["email", "dotenv"], version = "^1.10.7"}
+motor = "^3.1.2"
+cryptography = "^40.0.2"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.0.264"
+black = "^23.3.0"
+mypy = "^1.2.0"
+
+[tool.ruff]
+src = ["src"]
+line-length = 120
+# Python 3.10.
+target-version = "py310"
+# Group violations by containing file.
+format = "grouped"
+# By default, always show source code snippets.
+show-source = true
+# Avoid automatically removing unused imports in __init__.py files.
+ignore-init-module-imports = true
+# Disable warinings on this tags.
+task-tags = ["TODO"]
+# Rules.
+select = [
+    # pycodestyle.
+    "E", "W",
+    # Pyflakes.
+    "F",
+    # isort.
+    "I",
+    # pydocstyle.
+    "D",
+    # pyupgrade.
+    "UP",
+    # pep8-naming.
+    "N",
+    # flake8-2020.
+    "YTT",
+    # flake8-annotations.
+    "ANN",
+    # flake8-bandit.
+    "S",
+    # flake8-blind-except.
+    "BLE",
+    # flake8-boolean-trap.
+    "FBT",
+    # flake8-bugbear.
+    "B",
+    # flake8-builtins.
+    "A",
+    # flake8-comprehensions.
+    "C4",
+    # flake8-debugger.
+    "T10",
+    # flake8-errmsg.
+    "EM",
+    # flake8-implicit-str-concat.
+    "ISC",
+    # flake8-import-conventions.
+    "ICN",
+    # flake8-print.
+    "T20",
+    # flake8-pytest-style.
+    "PT",
+    # flake8-quotes.
+    "Q",
+    # flake8-return.
+    "RET",
+    # flake8-simplify.
+    "SIM",
+    # flake8-tidy-imports.
+    "TID",
+    # flake8-unused-arguments.
+    "ARG",
+    # flake8-datetimez.
+    "DTZ",
+    # eradicate.
+    "ERA",
+    # pandas-vet.
+    "PD",
+    # pygrep-hooks.
+    "PGH",
+    # Pylint.
+    "PLC", "PLE", "PLR", "PLW",
+    # flake8-pie.
+    "PIE",
+    # Ruff-specific rules.
+    "RUF",
+]
+# Disable.
+ignore = [
+    # Missing docstring in public module.
+    "D100",
+    # Missing docstring in public class.
+    "D101",
+    # Missing docstring in public method.
+    "D102",
+    # Missing docstring in public function.
+    "D103",
+    # Missing docstring in public package.
+    "D104",
+    # Missing docstring in public magic method.
+    "D105",
+    # Missing docstring in public nested class.
+    "D106",
+    # Missing docstring in __init__ method.
+    "D107",
+    # One-line docstring should fit on one line.
+    "D200",
+    # Multi-line docstring summary should start at the first line,
+    "D212",
+    # Missing type annotation for self in method.
+    "ANN101",
+    # Missing type annotation for cls in classmethod.
+    "ANN102",
+    # Dynamically typed expressions (typing.Any) are disallowed.
+    "ANN401",
+    # Shorted imports (numpy as np, etc).
+    "ICN001",
+    # Import from {module} instead: {names}
+    "UP035",
+    # Do not catch blind exception: `Exception`.
+    "BLE001",
+    # Possible SQL injection vector through string-based query construction.
+    "S608",
+    # Empty string in if.
+    "PLC1901"
+]
+
+[tool.ruff.isort]
+# Combines "as" imports on the same line.
+combine-as-imports = true
+# Place "closer" imports (fewer . characters, most local) before "further" imports.
+relative-imports-order = "closest-to-furthest"
+
+[tool.ruff.flake8-tidy-imports]
+# Disallow all relative imports.
+ban-relative-imports = "all"
+
+[tool.ruff.pep8-naming]
+# Allow Pydantic's `@validator` decorator to trigger class method treatment.
+classmethod-decorators = ["classmethod", "pydantic.validator", "pydantic.root_validator"]
+
+[tool.ruff.pycodestyle]
+max-doc-length = 100
+
+[tool.ruff.pydocstyle]
+# Use Google-style docstrings.
+convention = "google"
+
+[tool.ruff.flake8-annotations]
+# Suppress ANN000-level violations for arguments matching the "dummy" variable regex (like _).
+suppress-dummy-args = true
+
+[tool.ruff.flake8-bugbear]
+# Allow default arguments like, e.g., `data: list[str] = fastapi.Query(None)`.
+extend-immutable-calls = [
+    "fastapi.Depends", "fastapi.Query", "fastapi.Body", "fastapi.Path", "fastapi.Header", "fastapi.File"
+]
+
+[tool.black]
+line-length = 120
+# Python 3.10.
+target-version = ["py310"]
+# Colored output.
+color = true
+
+[tool.mypy]
+allow_redefinition = true
+
+[[tool.mypy.overrides]]
+module = ["motor.*"]
+ignore_missing_imports = true
