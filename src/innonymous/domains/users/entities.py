@@ -12,11 +12,11 @@ class UserEntity:
     alias: str = Field(regex=r"^\w{5,32}$")
     salt: bytes = Field()
     payload: bytes = Field()
-    updated: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
     id: UUID = Field(default_factory=uuid4)  # noqa: A003
 
-    @validator("updated", always=True)
-    def __validate_updated(cls, value: datetime) -> datetime:
+    @validator("updated_at", always=True)
+    def __validate_updated_at(cls, value: datetime) -> datetime:
         return value.astimezone(tz=timezone.utc)
 
 

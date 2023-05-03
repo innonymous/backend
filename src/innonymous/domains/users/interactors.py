@@ -54,7 +54,7 @@ class UsersInteractor:
         return user_entity
 
     async def update(self, entity: UserUpdateEntity) -> UserEntity:
-        kwargs: dict[str, Any] = {"updated": datetime.now(tz=timezone.utc)}
+        kwargs: dict[str, Any] = {"updated_at": datetime.now(tz=timezone.utc)}
 
         if entity.alias is not None:
             kwargs["alias"] = entity.alias
@@ -66,7 +66,7 @@ class UsersInteractor:
         # Update using transaction.
         old_user_entity = await self.get(id_=entity.id)
         new_user_entity = dataclasses.replace(old_user_entity, **kwargs)
-        await self.__repository.update(new_user_entity, updated=old_user_entity.updated)
+        await self.__repository.update(new_user_entity, updated_at=old_user_entity.updated_at)
 
         return new_user_entity
 

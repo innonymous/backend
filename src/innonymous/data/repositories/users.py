@@ -5,10 +5,12 @@ from uuid import UUID
 
 from pymongo import ASCENDING, IndexModel
 from pymongo.collation import Collation
+from pymongo.errors import DuplicateKeyError
 
 from innonymous.data.storages.mongodb import MongoDBStorage
 from innonymous.domains.users.entities import UserEntity
 from innonymous.domains.users.errors import (
+    UsersAlreadyExistsError,
     UsersDeserializingError,
     UsersError,
     UsersNotFoundError,
@@ -21,7 +23,9 @@ __all__ = ("UsersRepository",)
 
 
 class UsersRepository(AsyncLazyObject):
-    async def __ainit__(self, storage: MongoDBStorage, *, collection: str = "users") -> None:
+    async def __ainit__(
+        self, storage: MongoDBStorage, *, collection: str = "users", ttl: timedelta = timedelta(days=30)
+    ) -> None:
         self.__storage = storage
 
         try:
@@ -37,9 +41,9 @@ class UsersRepository(AsyncLazyObject):
                         collation=Collation(locale="en_US", strength=1),
                     ),
                     IndexModel(
-                        (("updated", ASCENDING),),
-                        name="users_updated_idx",
-                        expireAfterSeconds=timedelta(days=30).total_seconds(),
+                        (("updated_at", ASCENDING),),
+                        name="users_updated_at_idx",
+                        expireAfterSeconds=ttl.total_seconds(),
                     ),
                 ]
             )
@@ -74,19 +78,23 @@ class UsersRepository(AsyncLazyObject):
         try:
             await self.__collection.insert_one(serialized)
 
-        # TODO: add exceptions for duplicated alias or id.
+        except DuplicateKeyError as exception:
+            raise UsersAlreadyExistsError(id_=entity.id, alias=entity.alias) from exception
+
         except Exception as exception:
             message = f"Cannot perform creating: {exception}"
             raise UsersError(message) from exception
 
-    async def update(self, entity: UserEntity, *, updated: datetime | None = None) -> None:
+    async def update(self, entity: UserEntity, *, updated_at: datetime | None = None) -> None:
         serialized = self.__serialize(entity)
-        query = self.__get_query(updated=updated)
+        query = self.__get_query(updated_at=updated_at)
 
         try:
             result = await self.__collection.update_one(query, {"$set": serialized})
 
-        # TODO: add exceptions for duplicated alias or id.
+        except DuplicateKeyError as exception:
+            raise UsersAlreadyExistsError(id_=entity.id, alias=entity.alias) from exception
+
         except Exception as exception:
             message = f"Cannot perform updating: {exception}"
             raise UsersError(message) from exception
@@ -95,8 +103,8 @@ class UsersRepository(AsyncLazyObject):
         if result.modified_count > 0:
             return
 
-        if updated is not None:
-            raise UsersTransactionError(id_=entity.id, alias=entity.alias, updated=updated)
+        if updated_at is not None:
+            raise UsersTransactionError(id_=entity.id, alias=entity.alias, updated_at=updated_at)
 
         raise UsersNotFoundError(id_=entity.id, alias=entity.alias)
 
@@ -117,7 +125,7 @@ class UsersRepository(AsyncLazyObject):
 
     @staticmethod
     def __get_query(
-        *, id_: UUID | None = None, alias: str | None = None, updated: datetime | None = None
+        *, id_: UUID | None = None, alias: str | None = None, updated_at: datetime | None = None
     ) -> dict[str, Any]:
         query: dict[str, Any] = {}
 
@@ -127,8 +135,8 @@ class UsersRepository(AsyncLazyObject):
         if alias is not None:
             query["alias"] = alias
 
-        if updated is not None:
-            query["updated"] = updated
+        if updated_at is not None:
+            query["updated_at"] = updated_at
 
         return query
 
@@ -137,18 +145,18 @@ class UsersRepository(AsyncLazyObject):
         try:
             serialized = asdict(entity)
             serialized["id"] = serialized["id"].hex
-            serialized["updated"] = serialized["updated"]
+            serialized["updated_at"] = serialized["updated_at"]
 
             return serialized
 
         except Exception as exception:
-            raise UsersSerializingError(entity) from exception
+            raise UsersSerializingError(entity=entity) from exception
 
     @staticmethod
     def __deserialize(entity: dict[str, Any]) -> UserEntity:
         try:
-            entity["updated"] = entity["updated"].replace(tzinfo=timezone.utc)
+            entity["updated_at"] = entity["updated_at"].replace(tzinfo=timezone.utc)
             return UserEntity(**entity)
 
         except Exception as exception:
-            raise UsersDeserializingError(entity) from exception
+            raise UsersDeserializingError(entity=entity) from exception
