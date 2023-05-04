@@ -29,6 +29,8 @@ class MessageEntity:
     author: UUID = Field()
     body: MessageTextBodyEntity | MessageFilesBodyEntity = Field(discriminator="type")
     id: UUID = Field(default_factory=uuid4)  # noqa: A003
+    replied_to: UUID | None = Field(default=None)
+    forwarded_from: UUID | None = Field(default=None)
     updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
     created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
 

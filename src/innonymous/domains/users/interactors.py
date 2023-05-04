@@ -56,8 +56,14 @@ class UsersInteractor:
     async def update(self, entity: UserUpdateEntity) -> UserEntity:
         kwargs: dict[str, Any] = {"updated_at": datetime.now(tz=timezone.utc)}
 
+        if entity.name is not None:
+            kwargs["name"] = entity.name
+
         if entity.alias is not None:
             kwargs["alias"] = entity.alias
+
+        if entity.about is not None:
+            kwargs["about"] = entity.about
 
         if entity.password is not None:
             kwargs["salt"] = os.urandom(self.SALT_LENGTH)

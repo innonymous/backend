@@ -9,11 +9,13 @@ __all__ = ("UserEntity", "UserUpdateEntity", "UserCredentialsEntity")
 
 @dataclass
 class UserEntity:
-    alias: str = Field(regex=r"^\w{5,32}$")
     salt: bytes = Field()
     payload: bytes = Field()
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    alias: str = Field(regex=r"^\w{5,32}$")
     id: UUID = Field(default_factory=uuid4)  # noqa: A003
+    name: str = Field(default="", regex=r"^.{0,64}$")
+    about: str = Field(default="", regex=r"^.{0,128}$")
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
 
     @validator("updated_at", always=True)
     def __validate_updated_at(cls, value: datetime) -> datetime:
@@ -23,7 +25,9 @@ class UserEntity:
 @dataclass
 class UserUpdateEntity:
     id: UUID = Field()  # noqa: A003
+    name: str | None = Field(default=None, regex=r"^.{1,64}$")
     alias: str | None = Field(default=None, regex=r"^\w{5,32}$")
+    about: str | None = Field(default=None, regex=r"^.{0,128}$")
     password: str | None = Field(default=None, regex=r"^.{8,64}$")
 
 

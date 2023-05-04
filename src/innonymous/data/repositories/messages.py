@@ -1,10 +1,14 @@
+import asyncio
+from asyncio import Event
 from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
+from logging import getLogger
 from typing import Any, AsyncIterator
 from uuid import UUID
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo import ASCENDING, DESCENDING, IndexModel
+from pymongo.errors import InvalidOperation
 
 from innonymous.data.storages.mongodb import MongoDBStorage
 from innonymous.domains.messages.entities import MessageEntity, MessageFilesBodyEntity
@@ -15,17 +19,26 @@ from innonymous.domains.messages.errors import (
     MessagesSerializingError,
     MessagesTransactionError,
 )
+from innonymous.utils import AsyncLazyObject
 
 __all__ = ("MessagesRepository",)
 
 
-class MessagesRepository:
-    def __init__(
-        self, storage: MongoDBStorage, *, collections_prefix: str = "chat", ttl: timedelta = timedelta(days=30)
+class MessagesRepository(AsyncLazyObject):
+    async def __ainit__(
+        self,
+        storage: MongoDBStorage,
+        *,
+        collections_prefix: str = "chat",
+        ttl: timedelta = timedelta(days=30),
+        clear_period: timedelta = timedelta(minutes=5),
     ) -> None:
         self.__storage = storage
         self.__collections_prefix = collections_prefix
         self.__ttl = ttl.total_seconds()
+
+        self.__is_stopped = Event()
+        self.__worker = asyncio.create_task(self.__clear_empty_collections_worker(period=clear_period))
 
     async def get(self, chat: UUID, id_: UUID) -> MessageEntity | None:
         query = self.__get_query(id_=id_)
@@ -56,7 +69,7 @@ class MessagesRepository:
                 yield self.__deserialize(chat, entity)
 
         except Exception as exception:
-            message = f"Cannot perform creating: {exception}"
+            message = f"Cannot perform query: {exception}"
             raise MessagesError(message) from exception
 
     async def create(self, entity: MessageEntity) -> None:
@@ -109,6 +122,8 @@ class MessagesRepository:
 
     async def shutdown(self) -> None:
         await self.__storage.shutdown()
+        self.__is_stopped.set()
+        await self.__worker
 
     @staticmethod
     def __get_query(
@@ -135,9 +150,12 @@ class MessagesRepository:
             # We do not need to store it, since we store id in collection name.
             serialized.pop("chat")
 
-            serialized["id"] = serialized["id"].hex
-            serialized["author"] = serialized["author"].hex
+            # Convert all UUIDs.
+            for field, value in serialized.items():
+                if isinstance(value, UUID):
+                    serialized[field] = value.hex
 
+            # Convert all UUIDs.
             if isinstance(entity.body, MessageFilesBodyEntity):
                 serialized["body"]["data"] = [id_.hex for id_ in serialized["body"]["data"]]
 
@@ -178,3 +196,26 @@ class MessagesRepository:
         except Exception as exception:
             message = f"Cannot initialize collection: {exception}"
             raise MessagesError(message) from exception
+
+    async def __clear_empty_collections_worker(self, *, period: timedelta = timedelta(minutes=5)) -> None:
+        last_clearing = datetime.now(tz=timezone.utc)
+
+        while not self.__is_stopped.is_set():
+            if datetime.now(tz=timezone.utc) - last_clearing < period:
+                await asyncio.sleep(1)
+                continue
+
+            try:
+                last_clearing = datetime.now(tz=timezone.utc)
+
+                for collection in await self.__storage.client.list_collections(
+                    filter={"name": {"$regex": f"^{self.__collections_prefix}_[a-f0-9]{{32}}$"}}
+                ):
+                    if await self.__storage.client[collection["name"]].estimated_document_count() == 0:
+                        await self.__storage.client.drop_collection(collection["name"])
+
+            except InvalidOperation:
+                break
+
+            except Exception as exception:
+                getLogger().exception(f"Cannot delete empty collections: {exception}")
