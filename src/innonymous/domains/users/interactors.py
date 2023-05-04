@@ -56,6 +56,9 @@ class UsersInteractor:
     async def update(self, entity: UserUpdateEntity) -> UserEntity:
         kwargs: dict[str, Any] = {"updated_at": datetime.now(tz=timezone.utc)}
 
+        if entity.favorites is not None:
+            kwargs["favorites"] = entity.favorites
+
         if entity.name is not None:
             kwargs["name"] = entity.name
 

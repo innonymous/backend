@@ -145,6 +145,7 @@ class UsersRepository(AsyncLazyObject):
         try:
             serialized = asdict(entity)
             serialized["id"] = serialized["id"].hex
+            serialized["favorites"] = [id_.hex for id_ in entity.favorites]
             return serialized
 
         except Exception as exception:
