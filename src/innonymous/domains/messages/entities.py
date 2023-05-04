@@ -7,7 +7,7 @@ from pydantic.dataclasses import dataclass
 
 from innonymous.domains.messages.enums import MessageType
 
-__all__ = ("MessageTextBodyEntity", "MessageFilesBodyEntity", "MessageEntity")
+__all__ = ("MessageTextBodyEntity", "MessageFilesBodyEntity", "MessageEntity", "MessageUpdateEntity")
 
 
 @dataclass
