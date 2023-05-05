@@ -6,6 +6,8 @@ __all__ = ("Settings",)
 
 
 class Settings(BaseSettings):
+    JWT_KEY: str | None = Field(default=None)
+
     BROKER_URL: AmqpDsn = Field(default="amqp://innonymous:innonymous@localhost")
     BROKER_EXCHANGE: str = Field(default="events")
 

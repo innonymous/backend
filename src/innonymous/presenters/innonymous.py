@@ -37,33 +37,37 @@ __all__ = ("Innonymous",)
 
 
 class Innonymous(AsyncLazyObject):
-    async def __ainit__(self) -> None:
-        settings = Settings()
-        main_mongodb_storage = await MongoDBStorage(settings.DATABASE_URL, db=settings.MAIN_DATABASE_NAME)
+    async def __ainit__(self, *, settings: Settings | None = None) -> None:
+        self.__settings = Settings() if settings is None else settings
+        main_mongodb_storage = await MongoDBStorage(self.__settings.DATABASE_URL, db=self.__settings.MAIN_DATABASE_NAME)
 
         self.__users_interactor = UsersInteractor(
             await UsersRepository(
-                main_mongodb_storage, collection=settings.USERS_COLLECTION_NAME, ttl=settings.USERS_TTL
+                main_mongodb_storage, collection=self.__settings.USERS_COLLECTION_NAME, ttl=self.__settings.USERS_TTL
             )
         )
         self.__sessions_interactor = SessionsInteractor(
             await SessionsRepository(
-                main_mongodb_storage, collection=settings.SESSIONS_COLLECTION_NAME, ttl=settings.SESSIONS_TTL
+                main_mongodb_storage,
+                collection=self.__settings.SESSIONS_COLLECTION_NAME,
+                ttl=self.__settings.SESSIONS_TTL,
             )
         )
         self.__chats_interactor = ChatsInteractor(
             await ChatsRepository(
-                main_mongodb_storage, collection=settings.CHATS_COLLECTION_NAME, ttl=settings.CHATS_TTL
+                main_mongodb_storage, collection=self.__settings.CHATS_COLLECTION_NAME, ttl=self.__settings.CHATS_TTL
             )
         )
         self.__events_interactor = EventsInteractor(
-            EventsRepository(await RabbitMQStorage(settings.BROKER_URL, exchange=settings.BROKER_EXCHANGE))
+            EventsRepository(
+                await RabbitMQStorage(self.__settings.BROKER_URL, exchange=self.__settings.BROKER_EXCHANGE)
+            )
         )
         self.__messages_interactor = MessagesInteractor(
             await MessagesRepository(
-                await MongoDBStorage(settings.DATABASE_URL, db=settings.MESSAGES_DATABASE_NAME),
-                collections_prefix=settings.MESSAGES_COLLECTION_PREFIX,
-                ttl=settings.MESSAGES_TTL,
+                await MongoDBStorage(self.__settings.DATABASE_URL, db=self.__settings.MESSAGES_DATABASE_NAME),
+                collections_prefix=self.__settings.MESSAGES_COLLECTION_PREFIX,
+                ttl=self.__settings.MESSAGES_TTL,
             ),
         )
 
@@ -97,6 +101,12 @@ class Innonymous(AsyncLazyObject):
         await self.__users_interactor.update(UserUpdateEntity(id=session_entity.user))
         # Create session.
         await self.__sessions_interactor.create(session_entity)
+
+    async def update_session(self, user: UUID, session: UUID) -> None:
+        # Update user's updated_at.
+        await self.__users_interactor.update(UserUpdateEntity(id=user))
+        # Update session.
+        await self.__sessions_interactor.update(session)
 
     async def delete_session(self, user: UUID, *, session: UUID | None = None) -> None:
         # Update user's updated_at.

@@ -27,6 +27,7 @@ orjson = "^3.8.11"
 uvicorn = "^0.22.0"
 gunicorn = "^20.1.0"
 sse-starlette = "^1.5.0"
+pyjwt = "^2.6.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.0.264"
@@ -187,7 +188,13 @@ suppress-dummy-args = true
 [tool.ruff.flake8-bugbear]
 # Allow default arguments like, e.g., `data: list[str] = fastapi.Query(None)`.
 extend-immutable-calls = [
-    "fastapi.Depends", "fastapi.Query", "fastapi.Body", "fastapi.Path", "fastapi.Header", "fastapi.File"
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Body",
+    "fastapi.Path",
+    "fastapi.Header",
+    "fastapi.File",
+    "fastapi.security.HTTPBearer"
 ]
 
 [tool.black]

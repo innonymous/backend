@@ -3,9 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import ORJSONResponse
 
+from innonymous.presenters.api.data.repositories.tokens import TokensRepository
+from innonymous.presenters.api.domains.tokens.interactors import TokensInteractor
 from innonymous.presenters.innonymous import Innonymous
 
-__all__ = ("innonymous",)
+__all__ = ("innonymous", "tokens_interactor")
+
+from innonymous.settings import Settings
 
 application = FastAPI(
     title="Innonymous API",
@@ -21,8 +25,16 @@ application.add_middleware(
 # Allow gzip.
 application.add_middleware(GZipMiddleware)
 
+settings = Settings()
 # Main presenter.
-innonymous = Innonymous()
+innonymous = Innonymous(settings=settings)
+
+if settings.JWT_KEY is None:
+    message = "You should provide jwt key."
+    raise Exception(message)
+
+# This will be used for authentication anc captcha.
+tokens_interactor = TokensInteractor(TokensRepository(settings.JWT_KEY))
 
 
 @application.on_event("startup")
