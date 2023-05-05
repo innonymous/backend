@@ -27,6 +27,9 @@ class MessagesInteractor:
     ) -> AsyncIterator[MessageEntity]:
         return self.__repository.filter(chat, created_before=created_before, limit=limit)
 
+    async def create(self, entity: MessageEntity) -> None:
+        return await self.__repository.create(entity)
+
     async def update(self, entity: MessageUpdateEntity) -> MessageEntity:
         old_message_entity = await self.get(entity.chat, entity.id)
         kwargs: dict[str, Any] = {"updated_at": datetime.now(tz=timezone.utc)}
@@ -47,9 +50,6 @@ class MessagesInteractor:
         await self.__repository.update(new_message_entity, updated_at=old_message_entity.updated_at)
 
         return new_message_entity
-
-    async def create(self, entity: MessageEntity) -> None:
-        return await self.__repository.create(entity)
 
     async def delete(self, chat: UUID, id_: UUID) -> None:
         if not await self.__repository.delete(chat, id_):

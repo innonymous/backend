@@ -27,13 +27,13 @@ class ChatsInteractor:
     ) -> AsyncIterator[ChatEntity]:
         return self.__repository.filter(updated_before=updated_before, limit=limit)
 
+    async def create(self, entity: ChatEntity) -> None:
+        return await self.__repository.create(entity)
+
     async def update(self, id_: UUID) -> None:
         old_entity = await self.get(id_=id_)
         new_entity = dataclasses.replace(old_entity, updated_at=datetime.now(tz=timezone.utc))
         await self.__repository.update(new_entity, updated_at=old_entity.updated_at)
-
-    async def create(self, entity: ChatEntity) -> None:
-        return await self.__repository.create(entity)
 
     async def shutdown(self) -> None:
         await self.__repository.shutdown()
