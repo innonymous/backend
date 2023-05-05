@@ -20,6 +20,8 @@ python = "==3.10.*"
 pydantic = {extras = ["email", "dotenv"], version = "^1.10.7"}
 motor = "^3.1.2"
 cryptography = "^40.0.2"
+aio-pika = "^9.0.5"
+msgpack = "^1.0.5"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.0.264"
@@ -194,5 +196,5 @@ color = true
 allow_redefinition = true
 
 [[tool.mypy.overrides]]
-module = ["motor.*"]
+module = ["motor.*", "msgpack"]
 ignore_missing_imports = true
