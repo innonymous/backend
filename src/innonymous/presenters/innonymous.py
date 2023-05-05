@@ -1,3 +1,6 @@
+from datetime import datetime
+from logging import getLogger
+from typing import AsyncContextManager, AsyncIterator
 from uuid import UUID
 
 from innonymous.data.repositories.chats import ChatsRepository
@@ -10,15 +13,19 @@ from innonymous.domains.chats.entities import ChatEntity
 from innonymous.domains.chats.interactors import ChatsInteractor
 from innonymous.domains.events.entities import (
     EventChatCreatedEntity,
+    EventEntity,
     EventMessageCreatedEntity,
     EventMessageDeletedEntity,
     EventMessageUpdatedEntity,
+    EventUserCreatedEntity,
+    EventUserDeletedEntity,
+    EventUserUpdatedEntity,
 )
 from innonymous.domains.events.interactors import EventsInteractor
 from innonymous.domains.messages.entities import MessageEntity, MessageUpdateEntity
 from innonymous.domains.messages.errors import MessagesUpdateError
 from innonymous.domains.messages.interactors import MessagesInteractor
-from innonymous.domains.users.entities import UserUpdateEntity
+from innonymous.domains.users.entities import UserCredentialsEntity, UserEntity, UserUpdateEntity
 from innonymous.domains.users.interactors import UsersInteractor
 from innonymous.settings import Settings
 from innonymous.utils import AsyncLazyObject
@@ -52,6 +59,24 @@ class Innonymous(AsyncLazyObject):
             ),
         )
 
+    async def get_chat(self, *, id_: UUID | None = None, alias: str | None = None) -> ChatEntity:
+        return await self.__chats_interactor.get(id_=id_, alias=alias)
+
+    async def get_user(
+        self, *, id_: UUID | None = None, alias: str | None = None, credentials: UserCredentialsEntity | None = None
+    ) -> UserEntity:
+        return await self.__users_interactor.get(id_=id_, alias=alias, credentials=credentials)
+
+    def filter_chats(
+        self, *, updated_before: datetime | None = None, limit: int | None = None
+    ) -> AsyncIterator[ChatEntity]:
+        return self.__chats_interactor.filter(updated_before=updated_before, limit=limit)
+
+    def filter_messages(
+        self, chat: UUID, *, created_before: datetime | None = None, limit: int | None = None
+    ) -> AsyncIterator[MessageEntity]:
+        return self.__messages_interactor.filter(chat, created_before=created_before, limit=limit)
+
     async def create_chat(self, user: UUID, chat_entity: ChatEntity) -> None:
         # Update user's updated_at.
         await self.__users_interactor.update(UserUpdateEntity(id=user))
@@ -59,6 +84,20 @@ class Innonymous(AsyncLazyObject):
         await self.__chats_interactor.create(chat_entity)
         # Send event.
         await self.__events_interactor.publish(EventChatCreatedEntity(chat=chat_entity))
+
+    async def create_user(self, user_credentials_entity: UserCredentialsEntity) -> UserEntity:
+        user_entity = await self.__users_interactor.create(user_credentials_entity)
+        await self.__publish_event(EventUserCreatedEntity(user=user_entity))
+        return user_entity
+
+    async def update_user(self, user_update_entity: UserUpdateEntity) -> UserEntity:
+        user_entity = await self.__users_interactor.update(user_update_entity)
+        await self.__publish_event(EventUserUpdatedEntity(user=user_entity))
+        return user_entity
+
+    async def delete_user(self, user: UUID) -> None:
+        await self.__users_interactor.delete(user)
+        await self.__publish_event(EventUserDeletedEntity(user=user))
 
     async def create_message(self, message_entity: MessageEntity) -> None:
         # Update user's updated_at.
@@ -68,7 +107,7 @@ class Innonymous(AsyncLazyObject):
         # Create message.
         await self.__messages_interactor.create(message_entity)
         # Send event.
-        await self.__events_interactor.publish(EventMessageCreatedEntity(message=message_entity))
+        await self.__publish_event(EventMessageCreatedEntity(message=message_entity))
 
     async def update_message(self, user: UUID, message_update_entity: MessageUpdateEntity) -> None:
         message_entity = await self.__messages_interactor.get(message_update_entity.id, message_update_entity.chat)
@@ -84,7 +123,7 @@ class Innonymous(AsyncLazyObject):
         # Update message.
         await self.__messages_interactor.update(message_update_entity)
         # Send event.
-        await self.__events_interactor.publish(EventMessageUpdatedEntity(message=message_entity))
+        await self.__publish_event(EventMessageUpdatedEntity(message=message_entity))
 
     async def delete_message(self, user: UUID, chat: UUID, message: UUID) -> None:
         message_entity = await self.__messages_interactor.get(chat, message)
@@ -100,10 +139,22 @@ class Innonymous(AsyncLazyObject):
         # Delete message.
         await self.__messages_interactor.delete(chat, message)
         # Send event.
-        await self.__events_interactor.publish(EventMessageDeletedEntity(message=message))
+        await self.__publish_event(EventMessageDeletedEntity(message=message))
+
+    def subscribe_on_events(self) -> AsyncContextManager[AsyncIterator[EventEntity]]:
+        return self.__events_interactor.subscribe()
 
     async def shutdown(self) -> None:
         await self.__users_interactor.shutdown()
         await self.__chats_interactor.shutdown()
         await self.__events_interactor.shutdown()
         await self.__messages_interactor.shutdown()
+
+    async def __publish_event(self, entity: EventEntity) -> None:
+        try:
+            # Send event.
+            await self.__events_interactor.publish(entity)
+
+        except Exception as exception:
+            message = f"Cannot sent event: {exception}"
+            getLogger().exception(message)
