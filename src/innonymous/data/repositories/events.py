@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from dataclasses import asdict, is_dataclass
 from datetime import datetime
@@ -50,7 +51,7 @@ class EventsRepository:
             raise EventsError(message) from exception
 
         finally:
-            await channel.close()
+            await asyncio.shield(channel.close())
 
     async def shutdown(self) -> None:
         await self.__storage.shutdown()

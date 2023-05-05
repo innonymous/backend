@@ -54,7 +54,7 @@ class Innonymous(AsyncLazyObject):
         self.__messages_interactor = MessagesInteractor(
             await MessagesRepository(
                 await MongoDBStorage(settings.DATABASE_URL, db=settings.MESSAGES_DATABASE_NAME),
-                collection_prefix=settings.MESSAGES_COLLECTION_PREFIX,
+                collections_prefix=settings.MESSAGES_COLLECTION_PREFIX,
                 ttl=settings.MESSAGES_TTL,
             ),
         )
@@ -66,6 +66,9 @@ class Innonymous(AsyncLazyObject):
         self, *, id_: UUID | None = None, alias: str | None = None, credentials: UserCredentialsEntity | None = None
     ) -> UserEntity:
         return await self.__users_interactor.get(id_=id_, alias=alias, credentials=credentials)
+
+    async def get_message(self, chat: UUID, id_: UUID) -> MessageEntity:
+        return await self.__messages_interactor.get(chat, id_)
 
     def filter_chats(
         self, *, updated_before: datetime | None = None, limit: int | None = None
