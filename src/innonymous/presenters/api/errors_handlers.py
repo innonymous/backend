@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from innonymous.domains.chats.errors import ChatsNotFoundError
 from innonymous.domains.messages.errors import MessagesNotFoundError, MessagesUpdateError
 from innonymous.domains.sessions.errors import SessionsNotFoundError
-from innonymous.domains.users.errors import UsersNotFoundError
+from innonymous.domains.users.errors import UsersInvalidCredentialsError, UsersNotFoundError
 from innonymous.presenters.api.application import application
 from innonymous.presenters.api.domains.captcha.errors import CaptchaInvalidError
 from innonymous.presenters.api.errors import APIUnauthorizedError
@@ -30,7 +30,8 @@ async def bad_request(_: Request, exception: CaptchaInvalidError) -> ORJSONRespo
 
 
 @application.exception_handler(APIUnauthorizedError)  # type: ignore[has-type]
-async def unauthorized(_: Request, exception: APIUnauthorizedError) -> ORJSONResponse:
+@application.exception_handler(UsersInvalidCredentialsError)  # type: ignore[has-type]
+async def unauthorized(_: Request, exception: APIUnauthorizedError | UsersInvalidCredentialsError) -> ORJSONResponse:
     return ORJSONResponse(content=exception.to_dict(include_traceback=False), status_code=status.HTTP_401_UNAUTHORIZED)
 
 

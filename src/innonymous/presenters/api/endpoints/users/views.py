@@ -6,7 +6,6 @@ from pydantic import ValidationError
 from pydantic.error_wrappers import ErrorWrapper
 
 from innonymous.domains.users.entities import UserCredentialsEntity, UserEntity, UserUpdateEntity
-from innonymous.domains.users.errors import UsersInvalidCredentialsError
 from innonymous.presenters.api.application import captcha_interactor, innonymous
 from innonymous.presenters.api.dependencies import get_current_user
 from innonymous.presenters.api.domains.captcha.entities import CaptchaSolvedEntity
@@ -18,7 +17,6 @@ from innonymous.presenters.api.endpoints.users.schemas import (
     UserSchema,
     UserUpdateSchema,
 )
-from innonymous.presenters.api.errors import APIUnauthorizedError
 
 __all__ = ("get", "get_me", "create", "update", "delete")
 
@@ -86,13 +84,7 @@ async def update(*, body: UserUpdateSchema = Body(), user: UserEntity = Depends(
 
     if body.password is not None:
         # Validate old password.
-        try:
-            await innonymous.get_user(credentials=UserCredentialsEntity(alias=user.alias, password=body.password.old))
-
-        except UsersInvalidCredentialsError as exception:
-            message = "Invalid password."
-            raise APIUnauthorizedError(message) from exception
-
+        await innonymous.get_user(credentials=UserCredentialsEntity(alias=user.alias, password=body.password.old))
         # Allow password change.
         entity["password"] = body.password.new
 
