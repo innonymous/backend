@@ -7,6 +7,8 @@ from innonymous.domains.users.interactors import UsersInteractor
 
 from tests.tests.domains.users.conftest import UserEntityProtocol
 
+__all__ = ()
+
 
 @pytest.mark.user
 class TestUsersInteractorDeleteMethod:
