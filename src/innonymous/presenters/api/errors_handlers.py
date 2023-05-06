@@ -3,6 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse
 from pydantic import ValidationError
 
+from innonymous.domains.chats.errors import ChatsNotFoundError
 from innonymous.domains.sessions.errors import SessionsNotFoundError
 from innonymous.domains.users.errors import UsersNotFoundError
 from innonymous.presenters.api.application import application
@@ -13,8 +14,11 @@ __all__ = ("not_found", "bad_request", "unauthorized", "unprocessable_entity")
 
 
 @application.exception_handler(UsersNotFoundError)  # type: ignore[has-type]
+@application.exception_handler(ChatsNotFoundError)  # type: ignore[has-type]
 @application.exception_handler(SessionsNotFoundError)  # type: ignore[has-type]
-async def not_found(_: Request, exception: UsersNotFoundError | SessionsNotFoundError) -> ORJSONResponse:
+async def not_found(
+    _: Request, exception: UsersNotFoundError | SessionsNotFoundError | ChatsNotFoundError
+) -> ORJSONResponse:
     return ORJSONResponse(content=exception.to_dict(include_traceback=False), status_code=status.HTTP_404_NOT_FOUND)
 
 

@@ -5,9 +5,10 @@ from uuid import UUID
 from pydantic import Field
 
 from innonymous.domains.chats.entities import ChatEntity
+from innonymous.presenters.api.endpoints.captcha.schemas import CaptchaSolvedSchema
 from innonymous.utils import FastPydanticBaseModel
 
-__all__ = ("ChatSchema", "ChatCreateSchema", "ChatsSchema")
+__all__ = ("ChatSchema", "ChatCreateSchema", "ChatsSchema", "ChatInfoSchema")
 
 
 class ChatSchema(FastPydanticBaseModel):
@@ -22,10 +23,15 @@ class ChatSchema(FastPydanticBaseModel):
         return cls.parse_obj(asdict(entity))
 
 
-class ChatCreateSchema(FastPydanticBaseModel):
+class ChatInfoSchema(FastPydanticBaseModel):
     alias: str = Field()
     name: str = Field(default="")
     about: str = Field(default="")
+
+
+class ChatCreateSchema(FastPydanticBaseModel):
+    info: ChatInfoSchema = Field()
+    captcha: CaptchaSolvedSchema = Field()
 
 
 class ChatsSchema(FastPydanticBaseModel):
