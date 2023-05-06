@@ -8,6 +8,16 @@ from innonymous.domains.users.interactors import UsersInteractor
 
 from tests.tests.domains.users.conftest import UserEntityProtocol
 
+__all__ = ()
+
+
+def assert_called_with_valid_user_entity(args: tuple, credentials: UserCredentialsEntity):
+    created_user_entity: UserEntity
+    created_user_entity, *_ = args
+    assert created_user_entity.alias == credentials.alias
+    assert created_user_entity.salt is not None
+    assert created_user_entity.payload is not None
+
 
 @pytest.mark.user
 class TestUsersInteractorCreateMethod:
@@ -29,6 +39,7 @@ class TestUsersInteractorCreateMethod:
         actual_user = await interactor.create(user_credentials)
 
         assert expected_user.alias == actual_user.alias
+        assert_called_with_valid_user_entity(users_repository.create.call_args[0], user_credentials)
 
     async def test_user_already_exists(
         self, mocker: MockFixture, user_credentials: UserCredentialsEntity, users_repository: UsersRepository
@@ -39,3 +50,5 @@ class TestUsersInteractorCreateMethod:
 
         with pytest.raises(UsersAlreadyExistsError):
             _ = await interactor.create(user_credentials)
+
+        assert_called_with_valid_user_entity(users_repository.create.call_args[0], user_credentials)

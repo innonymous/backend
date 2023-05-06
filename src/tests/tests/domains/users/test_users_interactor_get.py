@@ -8,6 +8,8 @@ from innonymous.domains.users.entities import UserCredentialsEntity, UserEntity
 
 from tests.tests.domains.users.conftest import UserEntityProtocol
 
+__all__ = ()
+
 
 def is_same_user(expected: UserEntity, actual: UserEntity) -> bool:
     return expected.id == actual.id and expected.alias == actual.alias
@@ -26,6 +28,8 @@ class TestUsersInteractorGetMethod:
         actual_user = await interactor.get(id_=expected_user.id)
         assert is_same_user(expected_user, actual_user)
 
+        users_repository.get.assert_called_with(id_=expected_user.id, alias=None)
+
     async def test_by_alias(
         self, mocker: MockFixture, user_entity_factory: UserEntityProtocol, users_repository: UsersRepository
     ) -> None:
@@ -36,6 +40,8 @@ class TestUsersInteractorGetMethod:
 
         actual_user = await interactor.get(alias=expected_user.alias)
         assert is_same_user(expected_user, actual_user)
+
+        users_repository.get.assert_called_with(id_=None, alias=expected_user.alias)
 
     async def test_by_credentials(
         self,
@@ -54,6 +60,8 @@ class TestUsersInteractorGetMethod:
         actual_user = await interactor.get(credentials=user_credentials)
         assert is_same_user(expected_user, actual_user)
 
+        users_repository.get.assert_called_with(id_=None, alias=user_credentials.alias)
+
     async def test_fails_with_no_arguments(self, mocker: MockFixture, users_repository: UsersRepository) -> None:
         mocker.patch.object(users_repository, "get", side_effect=UsersError())
 
@@ -61,6 +69,8 @@ class TestUsersInteractorGetMethod:
 
         with pytest.raises(UsersError):
             _ = await interactor.get()
+
+        users_repository.get.assert_called_with(id_=None, alias=None)
 
     async def test_id_conflicts_with_alias(
         self, mocker: MockFixture, user_entity_factory: UserEntityProtocol, users_repository: UsersRepository
@@ -72,6 +82,8 @@ class TestUsersInteractorGetMethod:
 
         with pytest.raises(UsersError):
             _ = await interactor.get(id_=expected_user.id, alias=expected_user.alias)
+
+        users_repository.get.assert_called_with(id_=expected_user.id, alias=expected_user.alias)
 
     async def test_id_conflicts_with_credentials(
         self,
@@ -87,6 +99,8 @@ class TestUsersInteractorGetMethod:
 
         with pytest.raises(UsersError):
             _ = await interactor.get(id_=expected_user.id, credentials=user_credentials)
+
+        users_repository.get.assert_called_with(id_=expected_user.id, alias=user_credentials.alias)
 
     async def test_user_not_found(
         self,
@@ -105,6 +119,8 @@ class TestUsersInteractorGetMethod:
             interactor.get(alias=some_user.alias),
             interactor.get(credentials=user_credentials),
         ]
-        for task in tasks_to_fail:
+        for i, task in enumerate(tasks_to_fail):
+            assert users_repository.get.call_count == i
             with pytest.raises(UsersNotFoundError):
                 await task
+            assert users_repository.get.call_count == i + 1
