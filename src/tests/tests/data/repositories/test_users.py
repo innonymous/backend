@@ -3,6 +3,8 @@ import pytest
 from innonymous.data.repositories.users import UsersRepository
 from innonymous.data.storages.mongodb import MongoDBStorage
 
+__all__ = ("test_repository_mocked", "test_repository")
+
 
 @pytest.mark.it("Repository mocked testing.")
 async def test_repository_mocked(mongodb_storage: "MockedMongoDBStorage") -> None:
