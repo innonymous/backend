@@ -2,10 +2,9 @@ import re
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import Body, Depends, Path, Query
+from fastapi import Body, Depends, Path, Query, status
 from pydantic import ValidationError
 from pydantic.error_wrappers import ErrorWrapper
-from starlette import status
 
 from innonymous.domains.chats.entities import ChatEntity
 from innonymous.domains.users.entities import UserEntity
@@ -16,7 +15,7 @@ from innonymous.presenters.api.endpoints.chats import router
 from innonymous.presenters.api.endpoints.chats.schemas import ChatCreateSchema, ChatSchema, ChatsSchema
 from innonymous.presenters.api.endpoints.schemas import ErrorSchema
 
-__all__ = ("get", "filter")
+__all__ = ("get", "filter", "create")
 
 
 @router.get(

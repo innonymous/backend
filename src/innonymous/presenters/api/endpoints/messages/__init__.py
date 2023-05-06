@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-router = APIRouter(tags=["messages"], prefix="/chats/{chat}")
+router = APIRouter(tags=["messages"], prefix="/chats/{chat}/messages")
 
 __all__ = ("router",)
 
