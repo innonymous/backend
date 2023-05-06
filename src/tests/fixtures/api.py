@@ -1,4 +1,5 @@
 import os
+from typing import AsyncIterator
 
 import pytest
 from httpx import AsyncClient
@@ -7,7 +8,7 @@ __all__ = ("api_client",)
 
 
 @pytest.fixture()
-async def api_client(mongodb_url: str, rabbitmq_url: str) -> AsyncClient:
+async def api_client(mongodb_url: str, rabbitmq_url: str) -> AsyncIterator[AsyncClient]:
     os.environ["INNONYMOUS_JWT_KEY"] = "test"
     os.environ["INNONYMOUS_DATABASE_URL"] = mongodb_url
     os.environ["INNONYMOUS_BROKER_URL"] = rabbitmq_url
@@ -19,7 +20,7 @@ async def api_client(mongodb_url: str, rabbitmq_url: str) -> AsyncClient:
 
 
 @pytest.fixture()
-async def api_client_mocked() -> AsyncClient:
+async def api_client_mocked() -> AsyncIterator[AsyncClient]:
     os.environ["INNONYMOUS_JWT_KEY"] = "test"
 
     # TODO: Mock MongoDBStorage

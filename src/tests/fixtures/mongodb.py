@@ -1,7 +1,7 @@
 import asyncio
 import os
 from logging import getLogger
-from typing import Callable
+from typing import AsyncIterator, Callable
 from uuid import uuid4
 
 import pytest
@@ -14,7 +14,7 @@ __all__ = ("mongodb_url", "mongodb_container", "mongodb_storage")
 
 
 @pytest.fixture()
-async def mongodb_url(mongodb_container: Container | None) -> str:
+async def mongodb_url(mongodb_container: Container | None) -> AsyncIterator[str]:
     if mongodb_container is not None:
         url = f"mongodb://innonymous:innonymous@localhost:{list(mongodb_container.ports.values())[0]}"
 
@@ -51,7 +51,9 @@ async def mongodb_url(mongodb_container: Container | None) -> str:
 
 
 @pytest.fixture(scope="session")
-def mongodb_container(docker_client: DockerClient | None, unused_tcp_port_factory: Callable[[], int]) -> Container:
+def mongodb_container(
+    docker_client: DockerClient | None, unused_tcp_port_factory: Callable[[], int]
+) -> AsyncIterator[Container]:
     if docker_client is None:
         getLogger().error("Cannot create MongoDB, since docker is not available.")
         yield None
@@ -78,7 +80,7 @@ def mongodb_container(docker_client: DockerClient | None, unused_tcp_port_factor
 
 
 @pytest.fixture()
-async def mongodb_storage(mongodb_url: str) -> MongoDBStorage:
+async def mongodb_storage(mongodb_url: str) -> AsyncIterator[MongoDBStorage]:
     storage = await MongoDBStorage(mongodb_url)
     yield storage
     await storage.shutdown()
