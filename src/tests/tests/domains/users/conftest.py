@@ -9,7 +9,7 @@ from innonymous.domains.users.entities import UserEntity, UserCredentialsEntity
 
 class UserEntityProtocol(Protocol):
     def __call__(self, **fields) -> UserEntity:
-        ...
+        pass
 
 
 @pytest.fixture
