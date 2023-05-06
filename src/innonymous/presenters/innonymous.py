@@ -83,7 +83,14 @@ class Innonymous(AsyncLazyObject):
 
     async def update_user(self, user_update_entity: UserUpdateEntity) -> UserEntity:
         user_entity = await self.__users_interactor.update(user_update_entity)
-        await self.__publish_event(EventUserUpdatedEntity(user=user_entity))
+
+        if (
+            user_update_entity.alias is not None
+            or user_update_entity.about is not None
+            or user_update_entity.name is not None
+        ):
+            await self.__publish_event(EventUserUpdatedEntity(user=user_entity))
+
         return user_entity
 
     async def delete_user(self, user: UUID) -> None:

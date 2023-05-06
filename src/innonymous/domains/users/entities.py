@@ -29,7 +29,7 @@ class UserUpdateEntity:
     id: UUID = Field()  # noqa: A003
 
     favorites: list[UUID] | None = Field(default=None)
-    name: str | None = Field(default=None, regex=r"^.{1,64}$")
+    name: str | None = Field(default=None, regex=r"^.{0,64}$")
     alias: str | None = Field(default=None, regex=r"^[a-zA-Z0-9]\w{3,29}[a-zA-Z0-9]$")
     about: str | None = Field(default=None, regex=r"^.{0,128}$")
     password: str | None = Field(default=None, regex=r"^.{8,64}$")
