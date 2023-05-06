@@ -9,7 +9,7 @@ from innonymous.presenters.api.domains.captcha.interactors import CaptchaInterac
 from innonymous.presenters.api.domains.tokens.interactors import TokensInteractor
 from innonymous.presenters.innonymous import Innonymous
 
-__all__ = ("application", "innonymous", "tokens_interactor", "captcha_interactor")
+__all__ = ("application", "settings", "innonymous", "tokens_interactor", "captcha_interactor")
 
 from innonymous.settings import Settings
 
