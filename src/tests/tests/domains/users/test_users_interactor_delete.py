@@ -5,7 +5,7 @@ from innonymous.data.repositories.users import UsersRepository
 from innonymous.domains.users.errors import UsersNotFoundError
 from innonymous.domains.users.interactors import UsersInteractor
 
-from .conftest import UserEntityProtocol
+from tests.tests.domains.users.conftest import UserEntityProtocol
 
 
 @pytest.mark.user
