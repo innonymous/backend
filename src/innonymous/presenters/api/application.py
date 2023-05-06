@@ -9,7 +9,7 @@ from innonymous.presenters.api.domains.captcha.interactors import CaptchaInterac
 from innonymous.presenters.api.domains.tokens.interactors import TokensInteractor
 from innonymous.presenters.innonymous import Innonymous
 
-__all__ = ("application", "innonymous", "tokens_interactor", "captcha_interactor")
+__all__ = ("application", "settings", "innonymous", "tokens_interactor", "captcha_interactor")
 
 from innonymous.settings import Settings
 
@@ -51,7 +51,9 @@ async def on_shutdown() -> None:
     await innonymous.shutdown()
 
 
+# Include errors.
 # Include views.
 from innonymous.presenters.api.endpoints import router  # noqa: E402
+from innonymous.presenters.api.errors_handlers import *  # noqa: E402, F403
 
 application.include_router(router, prefix="/v2")  # type: ignore[has-type]

@@ -1,16 +1,16 @@
 from typing import Any
 
-from innonymous.errors import InnonymousError
 from innonymous.presenters.api.domains.tokens.entities import TokenEntity
+from innonymous.presenters.api.errors import APIError
 
 __all__ = ("TokensError", "TokensInvalidError", "TokensSerializingError", "TokensDeserializingError")
 
 
-class TokensError(InnonymousError):
+class TokensError(APIError):
     pass
 
 
-class TokensInvalidError(InnonymousError):
+class TokensInvalidError(TokensError):
     __message__ = "Token is invalid."
 
     def __init__(self, *, token: str | None = None, message: str | None = None) -> None:

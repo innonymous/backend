@@ -28,6 +28,14 @@ class InnonymousError(Exception):
         updated._attributes = self._attributes
         return updated
 
+    def to_dict(self, *, include_traceback: bool = True) -> dict[str, Any]:
+        serialized = {"alias": self.__class__.__name__, "attributes": self._attributes}
+
+        if include_traceback:
+            serialized["traceback"] = self._traceback
+
+        return serialized
+
     def __str__(self) -> str:
         return "".join(f"<{key}: {value}>" for key, value in self._attributes.items())
 

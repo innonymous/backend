@@ -83,11 +83,19 @@ class Innonymous(AsyncLazyObject):
 
     async def update_user(self, user_update_entity: UserUpdateEntity) -> UserEntity:
         user_entity = await self.__users_interactor.update(user_update_entity)
-        await self.__publish_event(EventUserUpdatedEntity(user=user_entity))
+
+        if (
+            user_update_entity.alias is not None
+            or user_update_entity.about is not None
+            or user_update_entity.name is not None
+        ):
+            await self.__publish_event(EventUserUpdatedEntity(user=user_entity))
+
         return user_entity
 
     async def delete_user(self, user: UUID) -> None:
         await self.__users_interactor.delete(user)
+        await self.__sessions_interactor.delete(user=user)
         await self.__publish_event(EventUserDeletedEntity(user=user))
 
     async def get_session(self, id_: UUID) -> SessionEntity:
@@ -102,11 +110,11 @@ class Innonymous(AsyncLazyObject):
         # Create session.
         await self.__sessions_interactor.create(session_entity)
 
-    async def update_session(self, user: UUID, session: UUID) -> None:
+    async def update_session(self, user: UUID, session: UUID) -> SessionEntity:
         # Update user's updated_at.
         await self.__users_interactor.update(UserUpdateEntity(id=user))
         # Update session.
-        await self.__sessions_interactor.update(session)
+        return await self.__sessions_interactor.update(session)
 
     async def delete_session(self, user: UUID, *, session: UUID | None = None) -> None:
         # Update user's updated_at.
@@ -152,10 +160,10 @@ class Innonymous(AsyncLazyObject):
         # Send event.
         await self.__publish_event(EventMessageCreatedEntity(message=message_entity))
 
-    async def update_message(self, user: UUID, message_update_entity: MessageUpdateEntity) -> None:
-        message_entity = await self.__messages_interactor.get(message_update_entity.id, message_update_entity.chat)
+    async def update_message(self, user: UUID, message_update_entity: MessageUpdateEntity) -> MessageEntity:
+        old_message_entity = await self.__messages_interactor.get(message_update_entity.chat, message_update_entity.id)
 
-        if user != message_entity.author:
+        if user != old_message_entity.author:
             message = "You have no permissions."
             raise MessagesUpdateError(message)
 
@@ -164,9 +172,10 @@ class Innonymous(AsyncLazyObject):
         # Update chat's updated_at.
         await self.__chats_interactor.update(message_update_entity.chat)
         # Update message.
-        await self.__messages_interactor.update(message_update_entity)
+        new_message_entity = await self.__messages_interactor.update(message_update_entity)
         # Send event.
-        await self.__publish_event(EventMessageUpdatedEntity(message=message_entity))
+        await self.__publish_event(EventMessageUpdatedEntity(message=new_message_entity))
+        return new_message_entity
 
     async def delete_message(self, user: UUID, chat: UUID, message: UUID) -> None:
         message_entity = await self.__messages_interactor.get(chat, message)

@@ -1,7 +1,7 @@
 import asyncio
 import os
 from logging import getLogger
-from typing import Callable
+from typing import AsyncIterator, Callable
 from uuid import uuid4
 
 import pytest
@@ -15,7 +15,7 @@ __all__ = ("rabbitmq_url", "rabbitmq_url_admin", "rabbitmq_container", "rabbitmq
 
 
 @pytest.fixture()
-async def rabbitmq_url(rabbitmq_container: Container | None, rabbitmq_url_admin: str) -> str:
+async def rabbitmq_url(rabbitmq_container: Container | None, rabbitmq_url_admin: str) -> AsyncIterator[str]:
     if rabbitmq_container is not None:
         url = f"amqp://innonymous:innonymous@localhost:{list(rabbitmq_container.ports.values())[0]}"
 
@@ -78,7 +78,9 @@ def rabbitmq_url_admin(rabbitmq_container: Container | None) -> str:
 
 
 @pytest.fixture(scope="session")
-def rabbitmq_container(docker_client: DockerClient | None, unused_tcp_port_factory: Callable[[], int]) -> Container:
+def rabbitmq_container(
+    docker_client: DockerClient | None, unused_tcp_port_factory: Callable[[], int]
+) -> AsyncIterator[Container | None]:
     if docker_client is None:
         getLogger().info("Cannot create RabbitMQ, since docker is not available.")
         yield None
@@ -107,7 +109,7 @@ def rabbitmq_container(docker_client: DockerClient | None, unused_tcp_port_facto
 
 
 @pytest.fixture()
-async def rabbitmq_storage(rabbitmq_url: str, rabbitmq_url_admin: str) -> RabbitMQStorage:
+async def rabbitmq_storage(rabbitmq_url: str, rabbitmq_url_admin: str) -> AsyncIterator[RabbitMQStorage]:
     storage = await RabbitMQStorage(rabbitmq_url)
     yield storage
     await storage.shutdown()

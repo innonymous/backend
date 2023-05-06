@@ -1,11 +1,11 @@
-from innonymous.errors import InnonymousError
+from innonymous.presenters.api.errors import APIError
 
 __all__ = ("CaptchaError", "CaptchaInvalidError")
 
 
-class CaptchaError(InnonymousError):
+class CaptchaError(APIError):
     pass
 
 
-class CaptchaInvalidError(InnonymousError):
+class CaptchaInvalidError(CaptchaError):
     __message__ = "Captcha is invalid."
