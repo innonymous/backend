@@ -4,7 +4,7 @@ from fastapi.responses import ORJSONResponse
 from pydantic import ValidationError
 
 from innonymous.domains.chats.errors import ChatsNotFoundError
-from innonymous.domains.messages.errors import MessagesNotFoundError
+from innonymous.domains.messages.errors import MessagesNotFoundError, MessagesUpdateError
 from innonymous.domains.sessions.errors import SessionsNotFoundError
 from innonymous.domains.users.errors import UsersNotFoundError
 from innonymous.presenters.api.application import application
@@ -41,3 +41,8 @@ async def unprocessable_entity(_: Request, exception: ValidationError | RequestV
         content={"alias": "ValidationError", "attributes": {"errors": exception.errors()}},
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
     )
+
+
+@application.exception_handler(MessagesUpdateError)  # type: ignore[has-type]
+async def forbidden(_: Request, exception: MessagesUpdateError) -> ORJSONResponse:
+    return ORJSONResponse(content=exception.to_dict(include_traceback=False), status_code=status.HTTP_403_FORBIDDEN)

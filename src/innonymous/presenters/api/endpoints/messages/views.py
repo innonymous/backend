@@ -3,15 +3,20 @@ from uuid import UUID
 
 from fastapi import Body, Depends, Path, Query, status
 
-from innonymous.domains.messages.entities import MessageEntity
+from innonymous.domains.messages.entities import MessageEntity, MessageUpdateEntity
 from innonymous.domains.users.entities import UserEntity
 from innonymous.presenters.api.application import innonymous
 from innonymous.presenters.api.dependencies import get_current_user
 from innonymous.presenters.api.endpoints.messages import router
-from innonymous.presenters.api.endpoints.messages.schemas import MessageCreateSchema, MessageSchema, MessagesSchema
+from innonymous.presenters.api.endpoints.messages.schemas import (
+    MessageCreateSchema,
+    MessageSchema,
+    MessagesSchema,
+    MessageUpdateSchema,
+)
 from innonymous.presenters.api.endpoints.schemas import ErrorSchema
 
-__all__ = ("get", "filter", "create")
+__all__ = ("get", "filter", "create", "delete")
 
 
 @router.get(
@@ -56,3 +61,39 @@ async def create(
     message = MessageEntity(chat=chat, author=user.id, **body.dict())
     await innonymous.create_message(message)
     return MessageSchema.from_entity(message)
+
+
+@router.patch(
+    "/{id}",
+    response_model=MessageSchema,
+    responses={
+        status.HTTP_404_NOT_FOUND: {"model": ErrorSchema},
+        status.HTTP_401_UNAUTHORIZED: {"model": ErrorSchema},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": ErrorSchema},
+    },
+)
+async def update(
+    *,
+    chat: UUID = Path(),
+    id_: UUID = Path(alias="id"),
+    body: MessageUpdateSchema = Body(),
+    user: UserEntity = Depends(get_current_user),
+) -> MessageSchema:
+    return MessageSchema.from_entity(
+        await innonymous.update_message(user.id, MessageUpdateEntity(id=id_, chat=chat, **body.dict()))
+    )
+
+
+@router.delete(
+    "/{id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_404_NOT_FOUND: {"model": ErrorSchema},
+        status.HTTP_401_UNAUTHORIZED: {"model": ErrorSchema},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": ErrorSchema},
+    },
+)
+async def delete(
+    *, chat: UUID = Path(), id_: UUID = Path(alias="id"), user: UserEntity = Depends(get_current_user)
+) -> None:
+    await innonymous.delete_message(user.id, chat, id_)

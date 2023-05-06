@@ -9,7 +9,14 @@ from innonymous.domains.messages.entities import MessageEntity
 from innonymous.domains.messages.enums import MessageType
 from innonymous.utils import FastPydanticBaseModel
 
-__all__ = ("MessageSchema", "MessageCreateSchema", "MessagesSchema", "MessageTextBodySchema", "MessageFilesBodySchema")
+__all__ = (
+    "MessageSchema",
+    "MessageCreateSchema",
+    "MessagesSchema",
+    "MessageTextBodySchema",
+    "MessageFilesBodySchema",
+    "MessageUpdateSchema",
+)
 
 
 class MessageTextBodySchema(FastPydanticBaseModel):
@@ -43,6 +50,10 @@ class MessageCreateSchema(FastPydanticBaseModel):
     body: MessageTextBodySchema | MessageFilesBodySchema = Field(discriminator="type")
     replied_to: UUID | None = Field(default=None)
     forwarded_from: UUID | None = Field(default=None)
+
+
+class MessageUpdateSchema(FastPydanticBaseModel):
+    body: MessageTextBodySchema | MessageFilesBodySchema = Field(discriminator="type")
 
 
 class MessagesSchema(FastPydanticBaseModel):
