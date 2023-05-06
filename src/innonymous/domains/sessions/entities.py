@@ -11,6 +11,7 @@ __all__ = ("SessionEntity",)
 class SessionEntity:
     user: UUID = Field()
     id: UUID = Field(default_factory=uuid4)  # noqa: A003
+    nonce: int = Field(default=0)
     agent: str = Field(default="")
     updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
 

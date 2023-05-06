@@ -2,25 +2,37 @@ import re
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import HTTPException, Path, Query, status
+from fastapi import Path, Query
+from pydantic import ValidationError
+from pydantic.error_wrappers import ErrorWrapper
+from starlette import status
 
+from innonymous.domains.chats.entities import ChatEntity
 from innonymous.presenters.api.application import innonymous
 from innonymous.presenters.api.endpoints.chats import router
 from innonymous.presenters.api.endpoints.chats.schemas import ChatSchema, ChatsSchema
+from innonymous.presenters.api.endpoints.schemas import ErrorSchema
 
 __all__ = ("get", "filter")
 
 
-@router.get("/{id}", response_model=ChatSchema)
+@router.get(
+    "/{id}",
+    response_model=ChatSchema,
+    responses={
+        status.HTTP_404_NOT_FOUND: {"model": ErrorSchema},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": ErrorSchema},
+    },
+)
 async def get(*, id_: str = Path(alias="id")) -> ChatSchema:
-    if re.match(r"^\w{5,32}$", id_) is not None:
+    if re.match(ChatEntity.alias.regex, id_) is not None:  # type: ignore[attr-defined]
         return ChatSchema.from_entity(await innonymous.get_chat(alias=id_))
 
     try:
         uuid = UUID(id_)
 
     except Exception as exception:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid alias or id.") from exception
+        raise ValidationError([ErrorWrapper(ValueError("Invalid alias or id."), "id")], ChatSchema) from exception
 
     return ChatSchema.from_entity(await innonymous.get_chat(id_=uuid))
 

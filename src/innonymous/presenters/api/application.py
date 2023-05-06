@@ -51,7 +51,9 @@ async def on_shutdown() -> None:
     await innonymous.shutdown()
 
 
+# Include errors.
 # Include views.
 from innonymous.presenters.api.endpoints import router  # noqa: E402
+from innonymous.presenters.api.errors_handlers import *  # noqa: E402, F403
 
 application.include_router(router, prefix="/v2")  # type: ignore[has-type]

@@ -88,6 +88,7 @@ class Innonymous(AsyncLazyObject):
 
     async def delete_user(self, user: UUID) -> None:
         await self.__users_interactor.delete(user)
+        await self.__sessions_interactor.delete(user=user)
         await self.__publish_event(EventUserDeletedEntity(user=user))
 
     async def get_session(self, id_: UUID) -> SessionEntity:
@@ -102,11 +103,11 @@ class Innonymous(AsyncLazyObject):
         # Create session.
         await self.__sessions_interactor.create(session_entity)
 
-    async def update_session(self, user: UUID, session: UUID) -> None:
+    async def update_session(self, user: UUID, session: UUID) -> SessionEntity:
         # Update user's updated_at.
         await self.__users_interactor.update(UserUpdateEntity(id=user))
         # Update session.
-        await self.__sessions_interactor.update(session)
+        return await self.__sessions_interactor.update(session)
 
     async def delete_session(self, user: UUID, *, session: UUID | None = None) -> None:
         # Update user's updated_at.

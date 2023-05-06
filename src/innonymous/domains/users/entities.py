@@ -11,7 +11,7 @@ __all__ = ("UserEntity", "UserUpdateEntity", "UserCredentialsEntity")
 class UserEntity:
     salt: bytes = Field()
     payload: bytes = Field()
-    alias: str = Field(regex=r"^\w{5,32}$")
+    alias: str = Field(regex=r"^[a-zA-Z0-9]\w{3,29}[a-zA-Z0-9]$")
 
     id: UUID = Field(default_factory=uuid4)  # noqa: A003
     favorites: list[UUID] = Field(default=[])
@@ -30,12 +30,12 @@ class UserUpdateEntity:
 
     favorites: list[UUID] | None = Field(default=None)
     name: str | None = Field(default=None, regex=r"^.{1,64}$")
-    alias: str | None = Field(default=None, regex=r"^\w{5,32}$")
+    alias: str | None = Field(default=None, regex=r"^[a-zA-Z0-9]\w{3,29}[a-zA-Z0-9]$")
     about: str | None = Field(default=None, regex=r"^.{0,128}$")
     password: str | None = Field(default=None, regex=r"^.{8,64}$")
 
 
 @dataclass
 class UserCredentialsEntity:
-    alias: str = Field(regex=r"^\w{5,32}$")
+    alias: str = Field(regex=r"^[a-zA-Z0-9]\w{3,29}[a-zA-Z0-9]$")
     password: str = Field(regex=r"^.{8,64}$")

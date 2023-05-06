@@ -131,7 +131,7 @@ class SessionsRepository(AsyncLazyObject):
             query["id"] = id_.hex
 
         if user is not None:
-            query["alias"] = user.hex
+            query["user"] = user.hex
 
         if updated_at is not None:
             query["updated_at"] = updated_at

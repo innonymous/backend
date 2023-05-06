@@ -62,6 +62,7 @@ class TokensRepository:
             elif isinstance(entity, TokenAccessEntity | TokenRefreshEntity):
                 serialized["user"] = entity.user.hex
                 serialized["session"] = entity.session.hex
+                serialized["nonce"] = entity.nonce
 
             return serialized
 
@@ -82,6 +83,7 @@ class TokensRepository:
 
             if entity["aud"] in ("access", "refresh"):
                 deserialized["user"] = UUID(entity["user"])
+                deserialized["nonce"] = entity["nonce"]
                 deserialized["session"] = UUID(entity["session"])
 
             return parse_obj_as(TokenEntity, deserialized)  # type: ignore[arg-type]

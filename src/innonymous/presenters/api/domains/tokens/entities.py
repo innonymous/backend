@@ -12,6 +12,7 @@ __all__ = ("TokenEntity", "TokenAccessEntity", "TokenRefreshEntity", "TokenCaptc
 class TokenAccessEntity:
     user: UUID = Field()
     session: UUID = Field()
+    nonce: int = Field()
     audience: Literal["access"] = Field(default="access")
     issued_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
     expires_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc) + timedelta(hours=1))
@@ -25,6 +26,7 @@ class TokenAccessEntity:
 class TokenRefreshEntity:
     user: UUID = Field()
     session: UUID = Field()
+    nonce: int = Field()
     audience: Literal["refresh"] = Field(default="refresh")
     issued_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
     expires_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc) + timedelta(days=30))
