@@ -13,17 +13,41 @@ from innonymous.data.storages.mongodb import MongoDBStorage
 __all__ = ("mongodb_url", "mongodb_container", "mongodb_storage")
 
 
-@pytest.fixture(scope="session")
-def mongodb_url(mongodb_container: Container | None) -> str:
+@pytest.fixture()
+async def mongodb_url(mongodb_container: Container | None) -> str:
     if mongodb_container is not None:
-        return f"mongodb://innonymous:innonymous@localhost:{list(mongodb_container.ports.values())[0]}"
+        url = f"mongodb://innonymous:innonymous@localhost:{list(mongodb_container.ports.values())[0]}"
 
-    if "INNONYMOUS_TEST_MONGODB_URL" in os.environ:
+    elif "INNONYMOUS_TEST_MONGODB_URL" in os.environ:
         url = os.environ["INNONYMOUS_TEST_MONGODB_URL"]
         getLogger().info(f"Using external MongoDB: {url}")
-        return url
 
-    raise RuntimeError("MongoDB is not available.")
+    else:
+        raise RuntimeError("MongoDB is not available.")
+
+    storage = await MongoDBStorage(url)
+
+    for attempt in range(10):
+        try:
+            await storage.client.list_collection_names()
+            break
+
+        except Exception as exception:
+            await asyncio.sleep(1)
+
+            # Healthcheck failed.
+            if attempt == 9:
+                message = f"MongoDB healthcheck failed: {exception}"
+                raise Exception(message) from exception
+
+            continue
+
+    yield url
+
+    # Drop configured database.
+    await storage.client.client.drop_database(storage.client.name)
+    # Close.
+    await storage.shutdown()
 
 
 @pytest.fixture(scope="session")
@@ -56,27 +80,5 @@ def mongodb_container(docker_client: DockerClient | None, unused_tcp_port_factor
 @pytest.fixture()
 async def mongodb_storage(mongodb_url: str) -> MongoDBStorage:
     storage = await MongoDBStorage(mongodb_url)
-
-    for attempt in range(10):
-        try:
-            await storage.client.list_collection_names()
-
-        except Exception as exception:
-            await asyncio.sleep(1)
-
-            # Healthcheck failed.
-            if attempt == 9:
-                message = f"MongoDB healthcheck failed: {exception}"
-                raise Exception(message) from exception
-
-            continue
-
     yield storage
-
-    # Close.
     await storage.shutdown()
-
-    # Recreate storage, since it can be closed.
-    async with MongoDBStorage(mongodb_url) as storage:
-        # Drop configured database.
-        await storage.client.client.drop_database(storage.client.name)
