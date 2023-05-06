@@ -100,7 +100,7 @@ class UsersRepository(AsyncLazyObject):
             raise UsersError(message) from exception
 
         # Success.
-        if result.modified_count > 0:
+        if result.matched_count > 0:
             return
 
         if updated_at is not None:
