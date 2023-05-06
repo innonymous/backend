@@ -23,6 +23,7 @@ async def api_client_mocked() -> AsyncClient:
     os.environ["INNONYMOUS_JWT_KEY"] = "test"
 
     # TODO: Mock MongoDBStorage
+    # TODO: Mock RabbitMQStorage
     from innonymous.presenters.api.application import application
 
     async with AsyncClient(app=application, base_url="http://test") as client:
