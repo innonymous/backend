@@ -28,7 +28,7 @@ class TokensRepository:
         self.__jwt = PyJWT()
         self.__key = key
 
-    def get(self, token: str, *, audience: str | None = None) -> TokenEntity:
+    def decode(self, token: str, *, audience: str | None = None) -> TokenEntity:
         try:
             decoded = self.__jwt.decode(token, self.__key, [self.ALGORITHM], audience=audience)
 
@@ -37,7 +37,7 @@ class TokensRepository:
 
         return self.__deserialize(decoded)
 
-    def create(self, entity: TokenEntity) -> str:
+    def encode(self, entity: TokenEntity) -> str:
         serialized = self.__serialize(entity)
 
         try:

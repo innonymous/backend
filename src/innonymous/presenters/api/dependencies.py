@@ -5,6 +5,7 @@ from innonymous.domains.sessions.errors import SessionsNotFoundError
 from innonymous.domains.users.entities import UserEntity
 from innonymous.domains.users.errors import UsersNotFoundError
 from innonymous.presenters.api.application import innonymous, tokens_interactor
+from innonymous.presenters.api.domains.tokens.entities import TokenAccessEntity
 from innonymous.presenters.api.domains.tokens.errors import TokensInvalidError
 
 __all__ = ("get_current_user",)
@@ -17,7 +18,9 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Provide authentication token.")
 
     try:
-        token = tokens_interactor.get(credentials.credentials, audience="access")
+        token: TokenAccessEntity = tokens_interactor.decode(
+            credentials.credentials, audience="access"
+        )  # type: ignore[assignment]
 
         # Validate session.
         await innonymous.get_session(token.session)

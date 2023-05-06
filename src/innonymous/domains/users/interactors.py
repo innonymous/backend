@@ -109,4 +109,9 @@ class UsersInteractor:
 
     @classmethod
     def __get_scrypt(cls, salt: bytes) -> Scrypt:
-        return Scrypt(salt, cls.PAYLOAD_LENGTH, cls.ITERATIONS, cls.BLOCK_SIZE, cls.PARALLELIZATION)
+        try:
+            return Scrypt(salt, cls.PAYLOAD_LENGTH, cls.ITERATIONS, cls.BLOCK_SIZE, cls.PARALLELIZATION)
+
+        except Exception as exception:
+            message = "Cannot create scrypt."
+            raise UsersError(message) from exception

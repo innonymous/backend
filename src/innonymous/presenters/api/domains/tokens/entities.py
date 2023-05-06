@@ -46,4 +46,4 @@ class TokenCaptchaEntity:
         return value.astimezone(tz=timezone.utc)
 
 
-TokenEntity = Annotated[TokenAccessEntity | TokenRefreshEntity | TokenRefreshEntity, Field(discriminator="audience")]
+TokenEntity = Annotated[TokenAccessEntity | TokenRefreshEntity | TokenCaptchaEntity, Field(discriminator="audience")]

@@ -44,15 +44,17 @@ async def create(
     await innonymous.create_session(session)
 
     return TokensSchema(
-        access_token=tokens_interactor.create(TokenAccessEntity(user=user.id, session=session.id)),
-        refresh_token=tokens_interactor.create(TokenRefreshEntity(user=user.id, session=session.id)),
+        access_token=tokens_interactor.encode(TokenAccessEntity(user=user.id, session=session.id)),
+        refresh_token=tokens_interactor.encode(TokenRefreshEntity(user=user.id, session=session.id)),
     )
 
 
 @router.patch("", response_model=TokensSchema)
 async def update(*, body: TokenRefreshSchema = Body()) -> TokensSchema:
     try:
-        token = tokens_interactor.get(body.refresh_token, audience="refresh")
+        token: TokenRefreshEntity = tokens_interactor.decode(
+            body.refresh_token, audience="refresh"
+        )  # type: ignore[assignment]
 
         # Update session.
         await innonymous.update_session(token.user, token.session)
@@ -67,8 +69,8 @@ async def update(*, body: TokenRefreshSchema = Body()) -> TokensSchema:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found.") from exception
 
     return TokensSchema(
-        access_token=tokens_interactor.create(TokenAccessEntity(user=token.user, session=token.session)),
-        refresh_token=tokens_interactor.create(TokenRefreshEntity(user=token.user, session=token.session)),
+        access_token=tokens_interactor.encode(TokenAccessEntity(user=token.user, session=token.session)),
+        refresh_token=tokens_interactor.encode(TokenRefreshEntity(user=token.user, session=token.session)),
     )
 
 
