@@ -1,0 +1,43 @@
+version: "3.8"
+name: innonymous
+
+x-env: &env
+  env_file:
+    - ./.env
+
+x-common: &common
+  restart: always
+  logging:
+    options:
+      max-size: "10m"
+      max-file: "5"
+
+services:
+  api:
+    image: smthngslv/innonymous-backend
+    environment:
+      - INNONYMOUS_DATABASE_URL=mongodb://innonymous:innonymous@mongodb
+      - INNONYMOUS_BROKER_URL=amqp://innonymous:innonymous@rabbitmq
+    ports:
+      - "8000:8000"
+    <<: *common
+    <<: *env
+
+  rabbitmq:
+    image: rabbitmq:management
+    environment:
+      - RABBITMQ_DEFAULT_USER=innonymous
+      - RABBITMQ_DEFAULT_PASS=innonymous
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    <<: *common
+
+  mongodb:
+    image: mongo:6
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: innonymous
+      MONGO_INITDB_ROOT_PASSWORD: innonymous
+    ports:
+      - "27017:27017"
+    <<: *common

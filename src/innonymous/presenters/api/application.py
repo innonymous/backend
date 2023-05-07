@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import ORJSONResponse
 
 from innonymous.presenters.api.data.repositories.captcha import CaptchaRepository
@@ -8,10 +7,11 @@ from innonymous.presenters.api.data.repositories.tokens import TokensRepository
 from innonymous.presenters.api.domains.captcha.interactors import CaptchaInteractor
 from innonymous.presenters.api.domains.tokens.interactors import TokensInteractor
 from innonymous.presenters.innonymous import Innonymous
+from innonymous.settings import Settings
+from innonymous.utils import GZipMiddleware
 
 __all__ = ("application", "settings", "innonymous", "tokens_interactor", "captcha_interactor")
 
-from innonymous.settings import Settings
 
 application = FastAPI(
     title="Innonymous API",
@@ -51,9 +51,10 @@ async def on_shutdown() -> None:
     await innonymous.shutdown()
 
 
-# Include errors.
 # Include views.
 from innonymous.presenters.api.endpoints import router  # noqa: E402
+
+# Include errors.
 from innonymous.presenters.api.errors_handlers import *  # noqa: E402, F403
 
 application.include_router(router, prefix="/v2")  # type: ignore[has-type]
