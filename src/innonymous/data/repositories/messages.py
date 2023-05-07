@@ -12,6 +12,7 @@ from pymongo.errors import InvalidOperation
 
 from innonymous.data.storages.mongodb import MongoDBStorage
 from innonymous.domains.messages.entities import MessageEntity, MessageFilesBodyEntity
+from innonymous.domains.messages.enums import MessageFragmentType
 from innonymous.domains.messages.errors import (
     MessagesDeserializingError,
     MessagesError,
@@ -155,9 +156,19 @@ class MessagesRepository(AsyncLazyObject):
                 if isinstance(value, UUID):
                     serialized[field] = value.hex
 
+            # Serialise UUIDs in fragments.
+            for fragment in serialized["body"]["fragments"]:
+                if fragment["type"] != MessageFragmentType.MENTION:
+                    continue
+
+                # Mention fragment contains object "mention" with UUIDs.
+                for field, value in fragment["mention"].items():
+                    if isinstance(value, UUID):
+                        fragment["mention"][field] = value.hex
+
             # Convert all UUIDs.
             if isinstance(entity.body, MessageFilesBodyEntity):
-                serialized["body"]["data"] = [id_.hex for id_ in serialized["body"]["data"]]
+                serialized["body"]["files"] = [id_.hex for id_ in entity.body.files]
 
             return serialized
 
