@@ -21,27 +21,27 @@ class TestUsersInteractorGetMethod:
         self, mocker: MockFixture, user_entity_factory: UserEntityProtocol, users_repository: UsersRepository
     ) -> None:
         expected_user = user_entity_factory()
-        mocker.patch.object(users_repository, "get", return_value=expected_user)
+        get_method = mocker.patch.object(users_repository, "get", return_value=expected_user)
 
         interactor = UsersInteractor(users_repository)
 
         actual_user = await interactor.get(id_=expected_user.id)
         assert is_same_user(expected_user, actual_user)
 
-        users_repository.get.assert_called_with(id_=expected_user.id, alias=None)
+        get_method.assert_called_with(id_=expected_user.id, alias=None)
 
     async def test_by_alias(
         self, mocker: MockFixture, user_entity_factory: UserEntityProtocol, users_repository: UsersRepository
     ) -> None:
         expected_user = user_entity_factory()
-        mocker.patch.object(users_repository, "get", return_value=expected_user)
+        get_method = mocker.patch.object(users_repository, "get", return_value=expected_user)
 
         interactor = UsersInteractor(users_repository)
 
         actual_user = await interactor.get(alias=expected_user.alias)
         assert is_same_user(expected_user, actual_user)
 
-        users_repository.get.assert_called_with(id_=None, alias=expected_user.alias)
+        get_method.assert_called_with(id_=None, alias=expected_user.alias)
 
     async def test_by_credentials(
         self,
@@ -55,35 +55,35 @@ class TestUsersInteractorGetMethod:
         interactor = UsersInteractor(users_repository)
         expected_user = await interactor.create(user_credentials)
 
-        mocker.patch.object(users_repository, "get", return_value=expected_user)
+        get_method = mocker.patch.object(users_repository, "get", return_value=expected_user)
 
         actual_user = await interactor.get(credentials=user_credentials)
         assert is_same_user(expected_user, actual_user)
 
-        users_repository.get.assert_called_with(id_=None, alias=user_credentials.alias)
+        get_method.assert_called_with(id_=None, alias=user_credentials.alias)
 
     async def test_fails_with_no_arguments(self, mocker: MockFixture, users_repository: UsersRepository) -> None:
-        mocker.patch.object(users_repository, "get", side_effect=UsersError())
+        get_method = mocker.patch.object(users_repository, "get", side_effect=UsersError())
 
         interactor = UsersInteractor(users_repository)
 
         with pytest.raises(UsersError):
             _ = await interactor.get()
 
-        users_repository.get.assert_called_with(id_=None, alias=None)
+        get_method.assert_called_with(id_=None, alias=None)
 
     async def test_id_conflicts_with_alias(
         self, mocker: MockFixture, user_entity_factory: UserEntityProtocol, users_repository: UsersRepository
     ) -> None:
         expected_user = user_entity_factory()
-        mocker.patch.object(users_repository, "get", side_effect=UsersError())
+        get_method = mocker.patch.object(users_repository, "get", side_effect=UsersError())
 
         interactor = UsersInteractor(users_repository)
 
         with pytest.raises(UsersError):
             _ = await interactor.get(id_=expected_user.id, alias=expected_user.alias)
 
-        users_repository.get.assert_called_with(id_=expected_user.id, alias=expected_user.alias)
+        get_method.assert_called_with(id_=expected_user.id, alias=expected_user.alias)
 
     async def test_id_conflicts_with_credentials(
         self,
@@ -93,14 +93,14 @@ class TestUsersInteractorGetMethod:
         users_repository: UsersRepository,
     ) -> None:
         expected_user = user_entity_factory()
-        mocker.patch.object(users_repository, "get", side_effect=UsersError())
+        get_method = mocker.patch.object(users_repository, "get", side_effect=UsersError())
 
         interactor = UsersInteractor(users_repository)
 
         with pytest.raises(UsersError):
             _ = await interactor.get(id_=expected_user.id, credentials=user_credentials)
 
-        users_repository.get.assert_called_with(id_=expected_user.id, alias=user_credentials.alias)
+        get_method.assert_called_with(id_=expected_user.id, alias=user_credentials.alias)
 
     async def test_user_not_found(
         self,
@@ -109,7 +109,7 @@ class TestUsersInteractorGetMethod:
         user_credentials: UserCredentialsEntity,
         users_repository: UsersRepository,
     ) -> None:
-        mocker.patch.object(users_repository, "get", return_value=None)
+        get_method = mocker.patch.object(users_repository, "get", return_value=None)
 
         some_user = user_entity_factory()
         interactor = UsersInteractor(users_repository)
@@ -120,7 +120,7 @@ class TestUsersInteractorGetMethod:
             interactor.get(credentials=user_credentials),
         ]
         for i, task in enumerate(tasks_to_fail):
-            assert users_repository.get.call_count == i
+            assert get_method.call_count == i
             with pytest.raises(UsersNotFoundError):
                 await task
-            assert users_repository.get.call_count == i + 1
+            assert get_method.call_count == i + 1
