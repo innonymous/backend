@@ -5,7 +5,7 @@ from innonymous.data.repositories.users import UsersRepository
 from innonymous.domains.users.errors import UsersNotFoundError
 from innonymous.domains.users.interactors import UsersInteractor
 
-from tests.tests.domains.users.conftest import UserEntityProtocol
+from tests.conftest import UserEntityProtocol
 
 __all__ = ()
 

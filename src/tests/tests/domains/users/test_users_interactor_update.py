@@ -11,7 +11,7 @@ from innonymous.domains.users.errors import UsersNotFoundError, UsersAlreadyExis
 from innonymous.domains.users.interactors import UsersInteractor
 from innonymous.domains.users.entities import UserUpdateEntity, UserEntity
 
-from tests.tests.domains.users.conftest import UserEntityProtocol
+from tests.conftest import UserEntityProtocol
 
 __all__ = ()
 

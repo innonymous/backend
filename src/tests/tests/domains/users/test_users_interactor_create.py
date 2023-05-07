@@ -6,7 +6,7 @@ from innonymous.domains.users.errors import UsersAlreadyExistsError
 from innonymous.domains.users.entities import UserEntity, UserCredentialsEntity
 from innonymous.domains.users.interactors import UsersInteractor
 
-from tests.tests.domains.users.conftest import UserEntityProtocol
+from tests.conftest import UserEntityProtocol
 
 __all__ = ()
 
