@@ -28,6 +28,13 @@ class MessagesInteractor:
         return self.__repository.filter(chat, created_before=created_before, limit=limit)
 
     async def create(self, entity: MessageEntity) -> None:
+        replied_to_message = entity.replied_to
+        replied_to_chat = entity.forwarded_from if entity.forwarded_from is not None else entity.chat
+
+        if replied_to_message is not None:
+            # Validate that message exists.
+            await self.get(replied_to_chat, replied_to_message)
+
         return await self.__repository.create(entity)
 
     async def update(self, entity: MessageUpdateEntity) -> MessageEntity:
