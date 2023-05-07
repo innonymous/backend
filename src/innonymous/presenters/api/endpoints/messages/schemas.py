@@ -28,6 +28,7 @@ __all__ = (
     "MessageFragmentTextSchema",
     "MessageFragmentLinkSchema",
     "MessageFragmentSchema",
+    "MessageForwardSchema",
 )
 
 
@@ -85,6 +86,11 @@ class MessageFilesBodySchema(FastPydanticBaseModel):
     type: Literal[MessageType.FILES] = Field(default=MessageType.FILES)  # noqa: A003
 
 
+class MessageForwardSchema(FastPydanticBaseModel):
+    chat: UUID = Field()
+    message: UUID = Field()
+
+
 class MessageSchema(FastPydanticBaseModel):
     id: UUID = Field()  # noqa: A003
     chat: UUID = Field()
@@ -92,7 +98,7 @@ class MessageSchema(FastPydanticBaseModel):
     body: MessageTextBodySchema | MessageFilesBodySchema = Field(discriminator="type")
 
     replied_to: UUID | None = Field()
-    forwarded_from: UUID | None = Field()
+    forwarded_from: MessageForwardSchema | None = Field()
     updated_at: datetime = Field()
     created_at: datetime = Field()
 
@@ -102,9 +108,9 @@ class MessageSchema(FastPydanticBaseModel):
 
 
 class MessageCreateSchema(FastPydanticBaseModel):
-    body: MessageTextBodySchema | MessageFilesBodySchema = Field(discriminator="type")
     replied_to: UUID | None = Field(default=None)
-    forwarded_from: UUID | None = Field(default=None)
+    forwarded_from: MessageForwardSchema | None = Field()
+    body: MessageTextBodySchema | MessageFilesBodySchema | None = Field(default=None, discriminator="type")
 
 
 class MessageUpdateSchema(FastPydanticBaseModel):

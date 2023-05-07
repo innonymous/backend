@@ -23,7 +23,7 @@ from innonymous.domains.events.entities import (
     EventUserUpdatedEntity,
 )
 from innonymous.domains.events.interactors import EventsInteractor
-from innonymous.domains.messages.entities import MessageEntity, MessageUpdateEntity
+from innonymous.domains.messages.entities import MessageCreateEntity, MessageEntity, MessageUpdateEntity
 from innonymous.domains.messages.errors import MessagesUpdateError
 from innonymous.domains.messages.interactors import MessagesInteractor
 from innonymous.domains.sessions.entities import SessionEntity
@@ -150,15 +150,16 @@ class Innonymous(AsyncLazyObject):
     ) -> AsyncIterator[MessageEntity]:
         return self.__messages_interactor.filter(chat, created_before=created_before, limit=limit)
 
-    async def create_message(self, message_entity: MessageEntity) -> None:
+    async def create_message(self, entity: MessageCreateEntity) -> MessageEntity:
         # Update user's updated_at.
-        await self.__users_interactor.update(UserUpdateEntity(id=message_entity.author))
+        await self.__users_interactor.update(UserUpdateEntity(id=entity.author))
         # Update chat's updated_at.
-        await self.__chats_interactor.update(message_entity.chat)
+        await self.__chats_interactor.update(entity.chat)
         # Create message.
-        await self.__messages_interactor.create(message_entity)
+        message_entity = await self.__messages_interactor.create(entity)
         # Send event.
         await self.__publish_event(EventMessageCreatedEntity(message=message_entity))
+        return message_entity
 
     async def update_message(self, user: UUID, message_update_entity: MessageUpdateEntity) -> MessageEntity:
         old_message_entity = await self.__messages_interactor.get(message_update_entity.chat, message_update_entity.id)

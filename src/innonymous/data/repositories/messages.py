@@ -151,7 +151,7 @@ class MessagesRepository(AsyncLazyObject):
             # We do not need to store it, since we store id in collection name.
             serialized.pop("chat")
 
-            # Convert all UUIDs.
+            # Serialise UUIDs in root entity.
             for field, value in serialized.items():
                 if isinstance(value, UUID):
                     serialized[field] = value.hex
@@ -166,9 +166,13 @@ class MessagesRepository(AsyncLazyObject):
                     if isinstance(value, UUID):
                         fragment["mention"][field] = value.hex
 
-            # Convert all UUIDs.
+            # Serialise UUIDs in files body entity.
             if isinstance(entity.body, MessageFilesBodyEntity):
                 serialized["body"]["files"] = [id_.hex for id_ in entity.body.files]
+
+            if entity.forwarded_from is not None:
+                serialized["forwarded_from"]["chat"] = entity.forwarded_from.chat.hex
+                serialized["forwarded_from"]["message"] = entity.forwarded_from.message.hex
 
             return serialized
 

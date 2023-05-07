@@ -25,6 +25,8 @@ __all__ = (
     "MessageFragmentTextEntity",
     "MessageFragmentLinkEntity",
     "MessageFragmentEntity",
+    "MessageCreateEntity",
+    "MessageForwardEntity",
 )
 
 
@@ -126,13 +128,19 @@ class MessageFilesBodyEntity:
 
 
 @dataclass
+class MessageForwardEntity:
+    chat: UUID = Field()
+    message: UUID = Field()
+
+
+@dataclass
 class MessageEntity:
     chat: UUID = Field()
     author: UUID = Field()
     body: MessageTextBodyEntity | MessageFilesBodyEntity = Field(discriminator="type")
     id: UUID = Field(default_factory=uuid4)  # noqa: A003
     replied_to: UUID | None = Field(default=None)
-    forwarded_from: UUID | None = Field(default=None)
+    forwarded_from: MessageForwardEntity | None = Field(default=None)
     updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
     created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
 
@@ -145,4 +153,13 @@ class MessageEntity:
 class MessageUpdateEntity:
     id: UUID = Field()  # noqa: A003
     chat: UUID = Field()
+    body: MessageTextBodyEntity | MessageFilesBodyEntity | None = Field(default=None, discriminator="type")
+
+
+@dataclass
+class MessageCreateEntity:
+    chat: UUID = Field()
+    author: UUID = Field()
+    replied_to: UUID | None = Field(default=None)
+    forwarded_from: MessageForwardEntity | None = Field(default=None)
     body: MessageTextBodyEntity | MessageFilesBodyEntity | None = Field(default=None, discriminator="type")

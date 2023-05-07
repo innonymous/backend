@@ -4,7 +4,11 @@ from typing import Any, AsyncIterator
 from uuid import UUID
 
 from innonymous.data.repositories.messages import MessagesRepository
-from innonymous.domains.messages.entities import MessageEntity, MessageUpdateEntity
+from innonymous.domains.messages.entities import (
+    MessageCreateEntity,
+    MessageEntity,
+    MessageUpdateEntity,
+)
 from innonymous.domains.messages.errors import MessagesNotFoundError, MessagesUpdateError
 
 __all__ = ("MessagesInteractor",)
@@ -27,19 +31,30 @@ class MessagesInteractor:
     ) -> AsyncIterator[MessageEntity]:
         return self.__repository.filter(chat, created_before=created_before, limit=limit)
 
-    async def create(self, entity: MessageEntity) -> None:
-        replied_to_message = entity.replied_to
-        replied_to_chat = entity.forwarded_from if entity.forwarded_from is not None else entity.chat
-
-        if replied_to_message is not None:
+    async def create(self, entity: MessageCreateEntity) -> MessageEntity:
+        if entity.replied_to is not None:
             # Validate that message exists.
-            await self.get(replied_to_chat, replied_to_message)
+            await self.get(entity.chat, entity.replied_to)
 
-        return await self.__repository.create(entity)
+        kwargs = dataclasses.asdict(entity)
+
+        # Set body from forwarded message.
+        if entity.forwarded_from is not None:
+            original_message = await self.get(entity.forwarded_from.chat, entity.forwarded_from.message)
+            kwargs["body"] = original_message.body
+
+        # Create message.
+        message_entity = MessageEntity(**kwargs)
+        await self.__repository.create(message_entity)
+        return message_entity
 
     async def update(self, entity: MessageUpdateEntity) -> MessageEntity:
         old_message_entity = await self.get(entity.chat, entity.id)
         kwargs: dict[str, Any] = {"updated_at": datetime.now(tz=timezone.utc)}
+
+        if old_message_entity.forwarded_from is not None:
+            message = "You cannot update forwarded message"
+            raise MessagesUpdateError(message)
 
         if kwargs["updated_at"] - old_message_entity.created_at > timedelta(hours=1):
             message = "You cannot update message after one hour."
