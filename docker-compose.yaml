@@ -14,7 +14,7 @@ x-common: &common
 
 services:
   api:
-    image: smthngslv/innonymous-backend
+    image: ghcr.io/innonymous/backend
     environment:
       - INNONYMOUS_DATABASE_URL=mongodb://innonymous:innonymous@mongodb
       - INNONYMOUS_BROKER_URL=amqp://innonymous:innonymous@rabbitmq
