@@ -20,7 +20,7 @@ StorageAndCollection = tuple[MongoDBStorage, AsyncIOMotorCollection]
 
 @pytest.fixture
 async def storage_and_collection(
-        mocker: MockFixture, mock_mongodb_storage: MongoDBStorage, mock_mongodb_collection: AsyncIOMotorCollection
+    mocker: MockFixture, mock_mongodb_storage: MongoDBStorage, mock_mongodb_collection: AsyncIOMotorCollection
 ) -> StorageAndCollection:
     mock_mongodb_storage.client = mocker.MagicMock(spec=AsyncIOMotorDatabase)
     mock_mongodb_storage.client.__getitem__ = mocker.Mock(return_value=mock_mongodb_collection)
@@ -47,8 +47,7 @@ def assert_successful_create_with_right_args(call_args: tuple, expected_user: Us
 @pytest.mark.mongo_repo
 class TestMongoDbUsersRepository:
     async def test_successful_create(
-            self, mocker: MockFixture, storage_and_collection: StorageAndCollection,
-            user_entity_factory: UserEntityProtocol
+        self, mocker: MockFixture, storage_and_collection: StorageAndCollection, user_entity_factory: UserEntityProtocol
     ) -> None:
         mongodb_storage, mock_collection = storage_and_collection
         mock_collection.insert_one = mocker.AsyncMock()
@@ -72,8 +71,7 @@ class TestMongoDbUsersRepository:
         assert_successful_create_with_right_args(mock_collection.insert_one.call_args, user)
 
     async def test_create_duplicate_user(
-            self, mocker: MockFixture, storage_and_collection: StorageAndCollection,
-            user_entity_factory: UserEntityProtocol
+        self, mocker: MockFixture, storage_and_collection: StorageAndCollection, user_entity_factory: UserEntityProtocol
     ) -> None:
         mongodb_storage, mock_collection = storage_and_collection
         mock_collection.insert_one = mocker.AsyncMock(side_effect=DuplicateKeyError("E X I S T"))
