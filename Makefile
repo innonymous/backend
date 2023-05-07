@@ -30,13 +30,13 @@ lint:
 ###--DOCKER--###########################################################################################################
 
 build:
-	docker build -t smthngslv/innonymous-backend:latest .
+	docker build -t ghcr.io/innonymous/backend:latest .
 
 push:
-	docker push smthngslv/innonymous-backend:latest
+	docker push ghcr.io/innonymous/backend:latest
 
 pull:
-	docker pull smthngslv/innonymous-backend:latest
+	docker pull ghcr.io/innonymous/backend:latest
 
 prune:
 	docker system prune -f
