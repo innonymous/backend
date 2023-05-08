@@ -156,12 +156,14 @@ class Innonymous(AsyncLazyObject):
         self,
         chat: UUID,
         *,
+        search: str | None = None,
+        author: UUID | None = None,
         created_after: datetime | None = None,
         created_before: datetime | None = None,
         limit: int | None = None,
     ) -> AsyncIterator[MessageEntity]:
         return self.__messages_interactor.filter(
-            chat, created_after=created_after, created_before=created_before, limit=limit
+            chat, search=search, author=author, created_after=created_after, created_before=created_before, limit=limit
         )
 
     async def create_message(self, entity: MessageCreateEntity) -> MessageEntity:

@@ -35,13 +35,15 @@ async def get(*, chat: UUID = Path(), id_: UUID = Path(alias="id")) -> MessageSc
 async def filter(  # noqa: A001
     *,
     chat: UUID = Path(),
+    search: str | None = Query(default=None),
+    author: UUID | None = Query(default=None),
     created_after: datetime | None = Query(default=None),
     created_before: datetime | None = Query(default=None),
     limit: int = Query(default=100, gt=0, le=250),
 ) -> MessagesSchema:
     messages = []
     async for entity in innonymous.filter_messages(
-        chat, created_after=created_after, created_before=created_before, limit=limit
+        chat, search=search, author=author, created_after=created_after, created_before=created_before, limit=limit
     ):
         messages.append(MessageSchema.from_entity(entity))
 

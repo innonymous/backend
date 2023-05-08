@@ -40,13 +40,13 @@ class ChatsRepository(AsyncLazyObject):
                         unique=True,
                         collation=Collation(locale="en_US", strength=1),
                     ),
-                    IndexModel((("name", TEXT), ("alias", TEXT), ("about", TEXT)), name="chats_search_idx"),
                     IndexModel(
                         (("updated_at", DESCENDING),),
                         name="chats_updated_at_idx",
                         unique=True,
                         expireAfterSeconds=ttl.total_seconds(),
                     ),
+                    IndexModel((("name", TEXT), ("alias", TEXT), ("about", TEXT)), name="chats_search_idx"),
                 ]
             )
 

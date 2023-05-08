@@ -7,11 +7,16 @@ from typing import Any, AsyncIterator
 from uuid import UUID
 
 from motor.motor_asyncio import AsyncIOMotorCollection
-from pymongo import ASCENDING, DESCENDING, IndexModel
+from pymongo import ASCENDING, DESCENDING, TEXT, IndexModel
 from pymongo.errors import InvalidOperation
 
 from innonymous.data.storages.mongodb import MongoDBStorage
-from innonymous.domains.messages.entities import MessageEntity, MessageFilesBodyEntity
+from innonymous.domains.messages.entities import (
+    MessageEntity,
+    MessageFilesBodyEntity,
+    MessageFragmentLinkEntity,
+    MessageFragmentTextEntity,
+)
 from innonymous.domains.messages.enums import MessageFragmentType
 from innonymous.domains.messages.errors import (
     MessagesDeserializingError,
@@ -61,16 +66,30 @@ class MessagesRepository(AsyncLazyObject):
         self,
         chat: UUID,
         *,
+        search: str | None = None,
+        author: UUID | None = None,
         created_after: datetime | None = None,
         created_before: datetime | None = None,
         limit: int | None = None,
     ) -> AsyncIterator[MessageEntity]:
-        query = self.__get_query(created_after=created_after, created_before=created_before)
+        query = self.__get_query(
+            search=search, author=author, created_after=created_after, created_before=created_before
+        )
         collection = await self.__get_collection(chat)
+
+        # Most resent first.
+        sort: list[tuple[str, Any]] = [("created_at", DESCENDING)]
+
+        # Score on search score.
+        if search is not None:
+            sort.insert(0, ("textScore", {"$meta": "textScore"}))
 
         try:
             async for entity in collection.find(
-                query, sort=(("created_at", DESCENDING),), limit=limit if limit is not None else 0
+                query,
+                sort=sort,
+                limit=limit if limit is not None else 0,
+                projection={"textScore": {"$meta": "textScore"}} if search is not None else None,
             ):
                 yield self.__deserialize(chat, entity)
 
@@ -135,6 +154,8 @@ class MessagesRepository(AsyncLazyObject):
     def __get_query(
         *,
         id_: UUID | None = None,
+        search: str | None = None,
+        author: UUID | None = None,
         updated_at: datetime | None = None,
         created_after: datetime | None = None,
         created_before: datetime | None = None,
@@ -147,6 +168,9 @@ class MessagesRepository(AsyncLazyObject):
         if updated_at is not None:
             query["updated_at"] = updated_at
 
+        if author is not None:
+            query["author"] = author.hex
+
         created_at_range = {}
 
         if created_after is not None:
@@ -158,10 +182,13 @@ class MessagesRepository(AsyncLazyObject):
         if created_at_range != {}:
             query["created_at"] = created_at_range
 
+        if search is not None:
+            query["$text"] = {"$search": search}
+
         return query
 
     @staticmethod
-    def __serialize(entity: MessageEntity) -> dict[str, Any]:
+    def __serialize(entity: MessageEntity) -> dict[str, Any]:  # noqa: PLR0912
         try:
             serialized = asdict(entity)
 
@@ -187,9 +214,24 @@ class MessagesRepository(AsyncLazyObject):
             if isinstance(entity.body, MessageFilesBodyEntity):
                 serialized["body"]["files"] = [id_.hex for id_ in entity.body.files]
 
+            # Serialise UUIDs in forwarded entity.
             if entity.forwarded_from is not None:
                 serialized["forwarded_from"]["chat"] = entity.forwarded_from.chat.hex
                 serialized["forwarded_from"]["message"] = entity.forwarded_from.message.hex
+
+            search = []
+            for fragment in entity.body.fragments:
+                if isinstance(fragment, MessageFragmentTextEntity):
+                    search.append(fragment.text)
+
+                elif isinstance(fragment, MessageFragmentLinkEntity):
+                    search.append(fragment.link)
+
+                    if fragment.text is not None:
+                        search.append(fragment.text)
+
+            # This field will be used for searching.
+            serialized["_search"] = " ".join(search)
 
             return serialized
 
@@ -220,6 +262,7 @@ class MessagesRepository(AsyncLazyObject):
                         expireAfterSeconds=self.__ttl,
                     ),
                     IndexModel((("updated_at", ASCENDING),), name="messages_updated_at_idx"),
+                    IndexModel((("_search", TEXT),), name="messages_search_idx"),
                 ]
             )
 
