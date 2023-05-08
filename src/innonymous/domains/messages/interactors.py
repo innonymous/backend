@@ -27,9 +27,14 @@ class MessagesInteractor:
         return entity
 
     def filter(  # noqa: A003
-        self, chat: UUID, *, created_before: datetime | None = None, limit: int | None = None
+        self,
+        chat: UUID,
+        *,
+        created_after: datetime | None = None,
+        created_before: datetime | None = None,
+        limit: int | None = None,
     ) -> AsyncIterator[MessageEntity]:
-        return self.__repository.filter(chat, created_before=created_before, limit=limit)
+        return self.__repository.filter(chat, created_after=created_after, created_before=created_before, limit=limit)
 
     async def create(self, entity: MessageCreateEntity) -> MessageEntity:
         if entity.replied_to is not None:

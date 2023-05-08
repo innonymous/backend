@@ -58,9 +58,14 @@ class MessagesRepository(AsyncLazyObject):
         return self.__deserialize(chat, entity)
 
     async def filter(  # noqa: A003
-        self, chat: UUID, *, created_before: datetime | None = None, limit: int | None = None
+        self,
+        chat: UUID,
+        *,
+        created_after: datetime | None = None,
+        created_before: datetime | None = None,
+        limit: int | None = None,
     ) -> AsyncIterator[MessageEntity]:
-        query = self.__get_query(created_before=created_before)
+        query = self.__get_query(created_after=created_after, created_before=created_before)
         collection = await self.__get_collection(chat)
 
         try:
@@ -128,7 +133,11 @@ class MessagesRepository(AsyncLazyObject):
 
     @staticmethod
     def __get_query(
-        *, id_: UUID | None = None, updated_at: datetime | None = None, created_before: datetime | None = None
+        *,
+        id_: UUID | None = None,
+        updated_at: datetime | None = None,
+        created_after: datetime | None = None,
+        created_before: datetime | None = None,
     ) -> dict[str, Any]:
         query: dict[str, Any] = {}
 
@@ -138,8 +147,16 @@ class MessagesRepository(AsyncLazyObject):
         if updated_at is not None:
             query["updated_at"] = updated_at
 
+        created_at_range = {}
+
+        if created_after is not None:
+            created_at_range["$gte"] = created_after
+
         if created_before is not None:
-            query["created_at"] = {"$lte": created_before}
+            created_at_range["$lte"] = created_before
+
+        if created_at_range != {}:
+            query["created_at"] = created_at_range
 
         return query
 

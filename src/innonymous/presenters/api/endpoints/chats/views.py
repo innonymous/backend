@@ -41,10 +41,15 @@ async def get(*, id_: str = Path(alias="id")) -> ChatSchema:
 
 @router.get("", response_model=ChatsSchema, responses={status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": ErrorSchema}})
 async def filter(  # noqa: A001
-    *, updated_before: datetime | None = Query(default=None), limit: int | None = Query(default=None)
+    *,
+    updated_after: datetime | None = Query(default=None),
+    updated_before: datetime | None = Query(default=None),
+    limit: int = Query(default=100, gt=0, le=250),
 ) -> ChatsSchema:
     chats = []
-    async for entity in innonymous.filter_chats(updated_before=updated_before, limit=limit):
+    async for entity in innonymous.filter_chats(
+        updated_after=updated_after, updated_before=updated_before, limit=limit
+    ):
         chats.append(ChatSchema.from_entity(entity))
 
     return ChatsSchema(chats=chats)

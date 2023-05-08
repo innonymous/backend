@@ -75,9 +75,9 @@ class ChatsRepository(AsyncLazyObject):
         return self.__deserialize(entity)
 
     async def filter(  # noqa: A003
-        self, *, updated_before: datetime | None = None, limit: int | None = None
+        self, *, updated_after: datetime | None = None, updated_before: datetime | None = None, limit: int | None = None
     ) -> AsyncIterator[ChatEntity]:
-        query = self.__get_query(updated_before=updated_before)
+        query = self.__get_query(updated_after=updated_after, updated_before=updated_before)
 
         try:
             async for entity in self.__collection.find(
@@ -134,6 +134,7 @@ class ChatsRepository(AsyncLazyObject):
         id_: UUID | None = None,
         alias: str | None = None,
         updated_at: datetime | None = None,
+        updated_after: datetime | None = None,
         updated_before: datetime | None = None,
     ) -> dict[str, Any]:
         query: dict[str, Any] = {}
@@ -147,8 +148,16 @@ class ChatsRepository(AsyncLazyObject):
         if updated_at is not None:
             query["updated_at"] = updated_at
 
+        updated_at_range = {}
+
+        if updated_after is not None:
+            updated_at_range["$gte"] = updated_after
+
         if updated_before is not None:
-            query["updated_at"] = {"$lte": updated_before}
+            updated_at_range["$lte"] = updated_before
+
+        if updated_at_range != {}:
+            query["updated_at"] = updated_at_range
 
         return query
 
