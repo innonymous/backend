@@ -76,6 +76,18 @@ class Innonymous(AsyncLazyObject):
     ) -> UserEntity:
         return await self.__users_interactor.get(id_=id_, alias=alias, credentials=credentials)
 
+    def filter_users(
+        self,
+        *,
+        search: str | None = None,
+        updated_after: datetime | None = None,
+        updated_before: datetime | None = None,
+        limit: int | None = None,
+    ) -> AsyncIterator[UserEntity]:
+        return self.__users_interactor.filter(
+            search=search, updated_after=updated_after, updated_before=updated_before, limit=limit
+        )
+
     async def create_user(self, user_credentials_entity: UserCredentialsEntity) -> UserEntity:
         user_entity = await self.__users_interactor.create(user_credentials_entity)
         await self.__publish_event(EventUserCreatedEntity(user=user_entity))
@@ -127,9 +139,16 @@ class Innonymous(AsyncLazyObject):
         return await self.__chats_interactor.get(id_=id_, alias=alias)
 
     def filter_chats(
-        self, *, updated_before: datetime | None = None, limit: int | None = None
+        self,
+        *,
+        search: str | None = None,
+        updated_after: datetime | None = None,
+        updated_before: datetime | None = None,
+        limit: int | None = None,
     ) -> AsyncIterator[ChatEntity]:
-        return self.__chats_interactor.filter(updated_before=updated_before, limit=limit)
+        return self.__chats_interactor.filter(
+            search=search, updated_after=updated_after, updated_before=updated_before, limit=limit
+        )
 
     async def create_chat(self, user: UUID, chat_entity: ChatEntity) -> None:
         # Update user's updated_at.
@@ -146,9 +165,18 @@ class Innonymous(AsyncLazyObject):
         return await self.__messages_interactor.get(chat, id_)
 
     def filter_messages(
-        self, chat: UUID, *, created_before: datetime | None = None, limit: int | None = None
+        self,
+        chat: UUID,
+        *,
+        search: str | None = None,
+        author: UUID | None = None,
+        created_after: datetime | None = None,
+        created_before: datetime | None = None,
+        limit: int | None = None,
     ) -> AsyncIterator[MessageEntity]:
-        return self.__messages_interactor.filter(chat, created_before=created_before, limit=limit)
+        return self.__messages_interactor.filter(
+            chat, search=search, author=author, created_after=created_after, created_before=created_before, limit=limit
+        )
 
     async def create_message(self, entity: MessageCreateEntity) -> MessageEntity:
         # Update user's updated_at.

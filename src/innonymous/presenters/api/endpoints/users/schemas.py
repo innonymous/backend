@@ -11,6 +11,7 @@ from innonymous.utils import FastPydanticBaseModel
 
 __all__ = (
     "UserSchema",
+    "UsersSchema",
     "UserPrivateSchema",
     "UserCredentialsSchema",
     "UserCreateSchema",
@@ -31,6 +32,10 @@ class UserSchema(FastPydanticBaseModel):
     @classmethod
     def from_entity(cls: type[T], entity: UserEntity) -> T:
         return cls.parse_obj(asdict(entity))
+
+
+class UsersSchema(FastPydanticBaseModel):
+    users: list[UserSchema] = Field()
 
 
 class UserPrivateSchema(UserSchema):

@@ -23,9 +23,16 @@ class ChatsInteractor:
         return entity
 
     def filter(  # noqa: A003
-        self, *, updated_before: datetime | None = None, limit: int | None = None
+        self,
+        *,
+        search: str | None = None,
+        updated_after: datetime | None = None,
+        updated_before: datetime | None = None,
+        limit: int | None = None,
     ) -> AsyncIterator[ChatEntity]:
-        return self.__repository.filter(updated_before=updated_before, limit=limit)
+        return self.__repository.filter(
+            search=search, updated_after=updated_after, updated_before=updated_before, limit=limit
+        )
 
     async def create(self, entity: ChatEntity) -> None:
         return await self.__repository.create(entity)
