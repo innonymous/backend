@@ -3,29 +3,16 @@ from uuid import uuid4
 
 import pytest
 from pytest_mock import MockFixture
-from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 from pymongo.errors import DuplicateKeyError
 
 from innonymous.data.repositories.users import UsersRepository
-from innonymous.data.storages.mongodb import MongoDBStorage
 from innonymous.domains.users.entities import UserEntity
 from innonymous.domains.users.errors import UsersAlreadyExistsError
 
 from tests.conftest import UserEntityProtocol
+from tests.tests.data.repositories.user.conftest import StorageAndCollection
 
 __all__ = ()
-
-StorageAndCollection = tuple[MongoDBStorage, AsyncIOMotorCollection]
-
-
-@pytest.fixture
-async def storage_and_collection(
-    mocker: MockFixture, mock_mongodb_storage: MongoDBStorage, mock_mongodb_collection: AsyncIOMotorCollection
-) -> StorageAndCollection:
-    mock_mongodb_storage.client = mocker.MagicMock(spec=AsyncIOMotorDatabase)
-    mock_mongodb_storage.client.__getitem__ = mocker.Mock(return_value=mock_mongodb_collection)
-
-    return mock_mongodb_storage, mock_mongodb_collection
 
 
 def assert_successful_create_with_right_args(call_args: tuple, expected_user: UserEntity) -> None:
@@ -45,11 +32,14 @@ def assert_successful_create_with_right_args(call_args: tuple, expected_user: Us
 
 
 @pytest.mark.mongo_repo
-class TestMongoDbUsersRepository:
+class TestMongoUsersRepositoryCreateMethod:
     async def test_successful_create(
-        self, mocker: MockFixture, storage_and_collection: StorageAndCollection, user_entity_factory: UserEntityProtocol
+        self,
+        mocker: MockFixture,
+        user_storage_and_collection: StorageAndCollection,
+        user_entity_factory: UserEntityProtocol,
     ) -> None:
-        mongodb_storage, mock_collection = storage_and_collection
+        mongodb_storage, mock_collection = user_storage_and_collection
         mock_collection.insert_one = mocker.AsyncMock()
 
         current_time = datetime.now(tz=timezone.utc)
@@ -58,7 +48,7 @@ class TestMongoDbUsersRepository:
             payload="payload",
             alias="alias",
             id=uuid4(),
-            favorites=[uuid4() for i in range(5)],
+            favorites=[uuid4() for _ in range(5)],
             name="name",
             about="about",
             updated_at=current_time,
@@ -71,9 +61,12 @@ class TestMongoDbUsersRepository:
         assert_successful_create_with_right_args(mock_collection.insert_one.call_args, user)
 
     async def test_create_duplicate_user(
-        self, mocker: MockFixture, storage_and_collection: StorageAndCollection, user_entity_factory: UserEntityProtocol
+        self,
+        mocker: MockFixture,
+        user_storage_and_collection: StorageAndCollection,
+        user_entity_factory: UserEntityProtocol,
     ) -> None:
-        mongodb_storage, mock_collection = storage_and_collection
+        mongodb_storage, mock_collection = user_storage_and_collection
         mock_collection.insert_one = mocker.AsyncMock(side_effect=DuplicateKeyError("E X I S T"))
 
         current_time = datetime.now(tz=timezone.utc)
