@@ -127,9 +127,16 @@ class Innonymous(AsyncLazyObject):
         return await self.__chats_interactor.get(id_=id_, alias=alias)
 
     def filter_chats(
-        self, *, updated_after: datetime | None = None, updated_before: datetime | None = None, limit: int | None = None
+        self,
+        *,
+        search: str | None = None,
+        updated_after: datetime | None = None,
+        updated_before: datetime | None = None,
+        limit: int | None = None,
     ) -> AsyncIterator[ChatEntity]:
-        return self.__chats_interactor.filter(updated_after=updated_after, updated_before=updated_before, limit=limit)
+        return self.__chats_interactor.filter(
+            search=search, updated_after=updated_after, updated_before=updated_before, limit=limit
+        )
 
     async def create_chat(self, user: UUID, chat_entity: ChatEntity) -> None:
         # Update user's updated_at.

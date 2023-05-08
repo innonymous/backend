@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, AsyncIterator
 from uuid import UUID
 
-from pymongo import ASCENDING, DESCENDING, IndexModel
+from pymongo import ASCENDING, DESCENDING, TEXT, IndexModel
 from pymongo.collation import Collation
 from pymongo.errors import DuplicateKeyError
 
@@ -40,7 +40,7 @@ class ChatsRepository(AsyncLazyObject):
                         unique=True,
                         collation=Collation(locale="en_US", strength=1),
                     ),
-                    IndexModel((("name", ASCENDING),), name="chats_name_idx"),
+                    IndexModel((("name", TEXT), ("alias", TEXT), ("about", TEXT)), name="chats_search_idx"),
                     IndexModel(
                         (("updated_at", DESCENDING),),
                         name="chats_updated_at_idx",
@@ -75,13 +75,28 @@ class ChatsRepository(AsyncLazyObject):
         return self.__deserialize(entity)
 
     async def filter(  # noqa: A003
-        self, *, updated_after: datetime | None = None, updated_before: datetime | None = None, limit: int | None = None
+        self,
+        *,
+        search: str | None = None,
+        updated_after: datetime | None = None,
+        updated_before: datetime | None = None,
+        limit: int | None = None,
     ) -> AsyncIterator[ChatEntity]:
-        query = self.__get_query(updated_after=updated_after, updated_before=updated_before)
+        query = self.__get_query(search=search, updated_after=updated_after, updated_before=updated_before)
+
+        # Most resent first.
+        sort: list[tuple[str, Any]] = [("updated_at", DESCENDING)]
+
+        # Score on search score.
+        if search is not None:
+            sort.insert(0, ("textScore", {"$meta": "textScore"}))
 
         try:
             async for entity in self.__collection.find(
-                query, sort=(("updated_at", DESCENDING),), limit=limit if limit is not None else 0
+                query,
+                sort=sort,
+                limit=limit if limit is not None else 0,
+                projection={"textScore": {"$meta": "textScore"}} if search is not None else None,
             ):
                 yield self.__deserialize(entity)
 
@@ -133,6 +148,7 @@ class ChatsRepository(AsyncLazyObject):
         *,
         id_: UUID | None = None,
         alias: str | None = None,
+        search: str | None = None,
         updated_at: datetime | None = None,
         updated_after: datetime | None = None,
         updated_before: datetime | None = None,
@@ -158,6 +174,9 @@ class ChatsRepository(AsyncLazyObject):
 
         if updated_at_range != {}:
             query["updated_at"] = updated_at_range
+
+        if search is not None:
+            query["$text"] = {"$search": search}
 
         return query
 
