@@ -31,6 +31,7 @@ pyjwt = "^2.6.0"
 captcha = "^0.4"
 pybase64 = "^1.2.3"
 aiohttp = "^3.8.4"
+aioboto3 = "^11.1.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.0.264"
@@ -215,5 +216,5 @@ color = true
 allow_redefinition = true
 
 [[tool.mypy.overrides]]
-module = ["motor.*", "msgpack", "captcha.*", "pybase64"]
+module = ["motor.*", "msgpack", "captcha.*", "pybase64", "aioboto3", "aiobotocore.*"]
 ignore_missing_imports = true
