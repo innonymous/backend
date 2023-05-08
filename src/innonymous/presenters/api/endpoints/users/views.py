@@ -1,7 +1,8 @@
 import re
+from datetime import datetime
 from uuid import UUID
 
-from fastapi import Body, Depends, Path, status
+from fastapi import Body, Depends, Path, Query, status
 from pydantic import ValidationError
 from pydantic.error_wrappers import ErrorWrapper
 
@@ -15,6 +16,7 @@ from innonymous.presenters.api.endpoints.users.schemas import (
     UserCreateSchema,
     UserPrivateSchema,
     UserSchema,
+    UsersSchema,
     UserUpdateSchema,
 )
 
@@ -52,6 +54,23 @@ async def get(*, id_: str = Path(alias="id")) -> UserSchema:
         raise ValidationError([ErrorWrapper(ValueError("Invalid alias or id."), "id")], UserSchema) from exception
 
     return UserSchema.from_entity(await innonymous.get_user(id_=uuid))
+
+
+@router.get("", response_model=UsersSchema, responses={status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": ErrorSchema}})
+async def filter(  # noqa: A001
+    *,
+    search: str | None = Query(default=None),
+    updated_after: datetime | None = Query(default=None),
+    updated_before: datetime | None = Query(default=None),
+    limit: int = Query(default=100, gt=0, le=250),
+) -> UsersSchema:
+    users = []
+    async for entity in innonymous.filter_users(
+        search=search, updated_after=updated_after, updated_before=updated_before, limit=limit
+    ):
+        users.append(UserSchema.from_entity(entity))
+
+    return UsersSchema(users=users)
 
 
 @router.post(

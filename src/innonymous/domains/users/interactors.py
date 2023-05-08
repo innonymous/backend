@@ -2,7 +2,7 @@ import dataclasses
 import os
 from asyncio import get_running_loop
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, AsyncIterator
 from uuid import UUID
 
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
@@ -41,6 +41,18 @@ class UsersInteractor:
             await self.__verify_scrypt(entity.salt, credentials.password, entity.payload)
 
         return entity
+
+    def filter(  # noqa: A003
+        self,
+        *,
+        search: str | None = None,
+        updated_after: datetime | None = None,
+        updated_before: datetime | None = None,
+        limit: int | None = None,
+    ) -> AsyncIterator[UserEntity]:
+        return self.__repository.filter(
+            search=search, updated_after=updated_after, updated_before=updated_before, limit=limit
+        )
 
     async def create(self, entity: UserCredentialsEntity) -> UserEntity:
         # Credentials.

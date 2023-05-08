@@ -1,9 +1,9 @@
 from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, AsyncIterator
 from uuid import UUID
 
-from pymongo import ASCENDING, IndexModel
+from pymongo import ASCENDING, DESCENDING, TEXT, IndexModel
 from pymongo.collation import Collation
 from pymongo.errors import DuplicateKeyError
 
@@ -45,6 +45,7 @@ class UsersRepository(AsyncLazyObject):
                         name="users_updated_at_idx",
                         expireAfterSeconds=ttl.total_seconds(),
                     ),
+                    IndexModel((("name", TEXT), ("alias", TEXT), ("about", TEXT)), name="chats_search_idx"),
                 ]
             )
 
@@ -71,6 +72,36 @@ class UsersRepository(AsyncLazyObject):
             return None
 
         return self.__deserialize(entity)
+
+    async def filter(  # noqa: A003
+        self,
+        *,
+        search: str | None = None,
+        updated_after: datetime | None = None,
+        updated_before: datetime | None = None,
+        limit: int | None = None,
+    ) -> AsyncIterator[UserEntity]:
+        query = self.__get_query(search=search, updated_after=updated_after, updated_before=updated_before)
+
+        # Most resent first.
+        sort: list[tuple[str, Any]] = [("updated_at", DESCENDING)]
+
+        # Score on search score.
+        if search is not None:
+            sort.insert(0, ("textScore", {"$meta": "textScore"}))
+
+        try:
+            async for entity in self.__collection.find(
+                query,
+                sort=sort,
+                limit=limit if limit is not None else 0,
+                projection={"textScore": {"$meta": "textScore"}} if search is not None else None,
+            ):
+                yield self.__deserialize(entity)
+
+        except Exception as exception:
+            message = f"Cannot perform query: {exception}"
+            raise UsersError(message) from exception
 
     async def create(self, entity: UserEntity) -> None:
         serialized = self.__serialize(entity)
@@ -125,7 +156,13 @@ class UsersRepository(AsyncLazyObject):
 
     @staticmethod
     def __get_query(
-        *, id_: UUID | None = None, alias: str | None = None, updated_at: datetime | None = None
+        *,
+        id_: UUID | None = None,
+        alias: str | None = None,
+        search: str | None = None,
+        updated_at: datetime | None = None,
+        updated_after: datetime | None = None,
+        updated_before: datetime | None = None,
     ) -> dict[str, Any]:
         query: dict[str, Any] = {}
 
@@ -137,6 +174,20 @@ class UsersRepository(AsyncLazyObject):
 
         if updated_at is not None:
             query["updated_at"] = updated_at
+
+        updated_at_range = {}
+
+        if updated_after is not None:
+            updated_at_range["$gte"] = updated_after
+
+        if updated_before is not None:
+            updated_at_range["$lte"] = updated_before
+
+        if updated_at_range != {}:
+            query["updated_at"] = updated_at_range
+
+        if search is not None:
+            query["$text"] = {"$search": search}
 
         return query
 

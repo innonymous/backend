@@ -76,6 +76,18 @@ class Innonymous(AsyncLazyObject):
     ) -> UserEntity:
         return await self.__users_interactor.get(id_=id_, alias=alias, credentials=credentials)
 
+    def filter_users(
+        self,
+        *,
+        search: str | None = None,
+        updated_after: datetime | None = None,
+        updated_before: datetime | None = None,
+        limit: int | None = None,
+    ) -> AsyncIterator[UserEntity]:
+        return self.__users_interactor.filter(
+            search=search, updated_after=updated_after, updated_before=updated_before, limit=limit
+        )
+
     async def create_user(self, user_credentials_entity: UserCredentialsEntity) -> UserEntity:
         user_entity = await self.__users_interactor.create(user_credentials_entity)
         await self.__publish_event(EventUserCreatedEntity(user=user_entity))
