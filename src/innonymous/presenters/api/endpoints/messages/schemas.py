@@ -109,12 +109,13 @@ class MessageSchema(FastPydanticBaseModel):
 
 class MessageCreateSchema(FastPydanticBaseModel):
     replied_to: UUID | None = Field(default=None)
-    forwarded_from: MessageForwardSchema | None = Field()
-    body: MessageTextBodySchema | MessageFilesBodySchema | None = Field(default=None, discriminator="type")
+    forwarded_from: MessageForwardSchema | None = Field(default=None)
+    body: str | MessageTextBodySchema | MessageFilesBodySchema | None = Field(default=None)
+    files: list[UUID] | None = Field(default=None)
 
 
 class MessageUpdateSchema(FastPydanticBaseModel):
-    body: MessageTextBodySchema | MessageFilesBodySchema = Field(discriminator="type")
+    body: str | MessageTextBodySchema | MessageFilesBodySchema = Field()
 
 
 class MessagesSchema(FastPydanticBaseModel):

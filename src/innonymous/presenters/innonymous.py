@@ -1,6 +1,8 @@
+import re
+from contextlib import suppress
 from datetime import datetime
 from logging import getLogger
-from typing import AsyncContextManager, AsyncIterator
+from typing import Any, AsyncContextManager, AsyncIterator, Sequence, Sized, TypeAlias
 from uuid import UUID
 
 from innonymous.data.repositories.chats import ChatsRepository
@@ -11,6 +13,7 @@ from innonymous.data.repositories.users import UsersRepository
 from innonymous.data.storages.mongodb import MongoDBStorage
 from innonymous.data.storages.rabbitmq import RabbitMQStorage
 from innonymous.domains.chats.entities import ChatEntity
+from innonymous.domains.chats.errors import ChatsAlreadyExistsError, ChatsNotFoundError
 from innonymous.domains.chats.interactors import ChatsInteractor
 from innonymous.domains.events.entities import (
     EventChatCreatedEntity,
@@ -23,12 +26,22 @@ from innonymous.domains.events.entities import (
     EventUserUpdatedEntity,
 )
 from innonymous.domains.events.interactors import EventsInteractor
-from innonymous.domains.messages.entities import MessageCreateEntity, MessageEntity, MessageUpdateEntity
+from innonymous.domains.messages.entities import (
+    MessageCreateEntity,
+    MessageEntity,
+    MessageFragmentLinkEntity,
+    MessageFragmentMentionChatEntity,
+    MessageFragmentMentionEntity,
+    MessageFragmentMentionUserEntity,
+    MessageFragmentTextEntity,
+    MessageUpdateEntity,
+)
 from innonymous.domains.messages.errors import MessagesUpdateError
 from innonymous.domains.messages.interactors import MessagesInteractor
 from innonymous.domains.sessions.entities import SessionEntity
 from innonymous.domains.sessions.interactors import SessionsInteractor
 from innonymous.domains.users.entities import UserCredentialsEntity, UserEntity, UserUpdateEntity
+from innonymous.domains.users.errors import UsersAlreadyExistsError, UsersNotFoundError
 from innonymous.domains.users.interactors import UsersInteractor
 from innonymous.settings import Settings
 from innonymous.utils import AsyncLazyObject
@@ -36,7 +49,18 @@ from innonymous.utils import AsyncLazyObject
 __all__ = ("Innonymous",)
 
 
+Fragments: TypeAlias = str | MessageFragmentMentionEntity | MessageFragmentLinkEntity | MessageFragmentTextEntity
+
+
 class Innonymous(AsyncLazyObject):
+    __MENTION_PATTERN = re.compile(r"\b@[a-zA-Z0-9]\w{3,30}[a-zA-Z0-9]\b")
+    __URL_WITH_TEXT_PATTERN = re.compile(
+        r"\b((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+)\b\[([\w\s\d]+)\]"
+    )
+    __URL_WITHOUT_TEXT_PATTERN = re.compile(
+        r"\b((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+)\b"
+    )
+
     async def __ainit__(self, *, settings: Settings | None = None) -> None:
         self.__settings = Settings() if settings is None else settings
         main_mongodb_storage = await MongoDBStorage(self.__settings.DATABASE_URL, db=self.__settings.MAIN_DATABASE_NAME)
@@ -89,6 +113,10 @@ class Innonymous(AsyncLazyObject):
         )
 
     async def create_user(self, user_credentials_entity: UserCredentialsEntity) -> UserEntity:
+        with suppress(ChatsNotFoundError):
+            chat = await self.get_chat(alias=user_credentials_entity.alias)
+            raise ChatsAlreadyExistsError(id_=chat.id, alias=chat.alias)
+
         user_entity = await self.__users_interactor.create(user_credentials_entity)
         await self.__publish_event(EventUserCreatedEntity(user=user_entity))
         return user_entity
@@ -151,6 +179,10 @@ class Innonymous(AsyncLazyObject):
         )
 
     async def create_chat(self, user: UUID, chat_entity: ChatEntity) -> None:
+        with suppress(UsersNotFoundError):
+            user_entity = await self.get_user(alias=chat_entity.alias)
+            raise UsersAlreadyExistsError(id_=user_entity.id, alias=user_entity.alias)
+
         # Update user's updated_at.
         await self.__users_interactor.update(UserUpdateEntity(id=user))
         # Create chat.
@@ -228,6 +260,146 @@ class Innonymous(AsyncLazyObject):
         await self.__events_interactor.shutdown()
         await self.__sessions_interactor.shutdown()
         await self.__messages_interactor.shutdown()
+
+    async def string_to_fragments(
+        self, string: str
+    ) -> list[MessageFragmentMentionEntity | MessageFragmentLinkEntity | MessageFragmentTextEntity]:
+        is_changed = True
+        fragments: list[Fragments] = [string]
+
+        while is_changed:
+            is_changed, fragments = await self.__try_parse(fragments)
+
+        for i, fragment in enumerate(fragments):
+            if isinstance(fragment, str):
+                fragments[i] = MessageFragmentTextEntity(text=fragment)
+
+        return fragments  # type: ignore[return-value]
+
+    @staticmethod
+    def __append_if_not_empty(value: Sized, target: list[Any]) -> bool:
+        if len(value) > 0:
+            target.append(value)
+            return True
+
+        return False
+
+    @classmethod
+    def __try_parse_url_with_text(cls, fragment: str, fragments: list[Fragments]) -> bool:
+        match = cls.__URL_WITH_TEXT_PATTERN.search(fragment)
+
+        if match is None:
+            return False
+
+        # Use https by default.
+        url = match.group(1)
+        if not url.startswith("http"):
+            url = "https://" + url
+
+        try:
+            entity = MessageFragmentLinkEntity(link=url, text=match.group(3))  # type: ignore[arg-type]
+
+        except Exception:
+            return False
+
+        cls.__append_if_not_empty(fragment[: match.start()], fragments)
+        fragments.append(entity)
+        cls.__append_if_not_empty(fragment[match.end() :], fragments)
+
+        return True
+
+    @classmethod
+    def __try_parse_url_without_text(cls, fragment: str, fragments: list[Fragments]) -> bool:
+        match = cls.__URL_WITHOUT_TEXT_PATTERN.search(fragment)
+
+        if match is None:
+            return False
+
+        # Use https by default.
+        url = match.string
+        if not url.startswith("http"):
+            url = "https://" + url
+
+        try:
+            entity = MessageFragmentLinkEntity(link=url)  # type: ignore[arg-type]
+
+        except Exception:
+            return False
+
+        cls.__append_if_not_empty(fragment[: match.start()], fragments)
+        fragments.append(entity)
+        cls.__append_if_not_empty(fragment[match.end() :], fragments)
+
+        return True
+
+    async def __try_parse_mention(self, fragment: str, fragments: list[Fragments]) -> bool:
+        match = self.__MENTION_PATTERN.search(fragment)
+
+        if match is None:
+            return False
+
+        mention: MessageFragmentMentionUserEntity | MessageFragmentMentionChatEntity | None = None
+
+        try:
+            # Check if this is users.
+            user = await self.get_user(alias=match.string[1:])
+            mention = MessageFragmentMentionUserEntity(user=user.id)
+
+        except UsersNotFoundError:
+            try:
+                # Check if this is chat.
+                chat = await self.get_chat(alias=match.string[1:])
+                mention = MessageFragmentMentionChatEntity(chat=chat.id)
+
+            except ChatsNotFoundError:
+                pass
+
+        if mention is None:
+            return False
+
+        self.__append_if_not_empty(fragment[: match.start()], fragments)
+        fragments.append(MessageFragmentMentionEntity(mention=mention))
+        self.__append_if_not_empty(fragment[match.end() :], fragments)
+
+        return True
+
+    async def __try_parse(
+        self,
+        fragments: Sequence[Fragments],
+    ) -> tuple[bool, list[Fragments]]:
+        is_changed = False
+
+        updated_fragments: list[Fragments] = []
+        for fragment in fragments:
+            if not isinstance(fragment, str):
+                updated_fragments.append(fragment)
+                continue
+
+            if self.__try_parse_url_with_text(fragment, updated_fragments):
+                is_changed = True
+                continue
+
+            if self.__try_parse_url_without_text(fragment, updated_fragments):
+                is_changed = True
+                continue
+
+            if await self.__try_parse_mention(fragment, updated_fragments):
+                is_changed = True
+                continue
+
+            # No success.
+            updated_fragments.append(fragment)
+
+        merged_fragments: list[Fragments] = []
+        for fragment in updated_fragments:
+            if len(merged_fragments) == 0 or not isinstance(fragment, str) or not isinstance(merged_fragments[-1], str):
+                merged_fragments.append(fragment)
+                continue
+
+            merged_fragments[-1] += fragment
+            is_changed = True
+
+        return is_changed, merged_fragments
 
     async def __publish_event(self, entity: EventEntity) -> None:
         try:
