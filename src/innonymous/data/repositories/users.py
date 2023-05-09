@@ -84,11 +84,19 @@ class UsersRepository(AsyncLazyObject):
         query = self.__get_query(search=search, updated_after=updated_after, updated_before=updated_before)
 
         # Most resent first.
-        sort: list[tuple[str, Any]] = [("updated_at", DESCENDING)]
+        sort: list[tuple[str, Any]] = []
 
         # Score on search score.
         if search is not None:
-            sort.insert(0, ("textScore", {"$meta": "textScore"}))
+            sort.append(("textScore", {"$meta": "textScore"}))
+
+        # Only updated_after.
+        if updated_after is not None and updated_before is None:
+            sort.append(("updated_at", ASCENDING))
+
+        # Only updated_before.
+        if updated_before is not None and updated_after is None:
+            sort.append(("updated_at", DESCENDING))
 
         try:
             async for entity in self.__collection.find(

@@ -9,7 +9,7 @@ __all__ = ("ChatEntity",)
 
 @dataclass
 class ChatEntity:
-    alias: str = Field(regex=r"^[a-zA-Z0-9]\w{3,29}[a-zA-Z0-9]$")
+    alias: str = Field(regex=r"^[a-zA-Z0-9]\w{3,30}[a-zA-Z0-9]$")
     id: UUID = Field(default_factory=uuid4)  # noqa: A003
     name: str = Field(default="", regex=r"^.{0,64}$")
     about: str = Field(default="", regex=r"^.{0,128}$")
