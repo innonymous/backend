@@ -78,11 +78,19 @@ class MessagesRepository(AsyncLazyObject):
         collection = await self.__get_collection(chat)
 
         # Most resent first.
-        sort: list[tuple[str, Any]] = [("created_at", DESCENDING)]
+        sort: list[tuple[str, Any]] = []
 
         # Score on search score.
         if search is not None:
-            sort.insert(0, ("textScore", {"$meta": "textScore"}))
+            sort.append(("textScore", {"$meta": "textScore"}))
+
+        # Only created_after.
+        if created_after is not None and created_before is None:
+            sort.append(("created_at", ASCENDING))
+
+        # Only created_before.
+        if created_before is not None and created_after is None:
+            sort.append(("created_at", DESCENDING))
 
         try:
             async for entity in collection.find(
