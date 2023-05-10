@@ -5,6 +5,8 @@ from logging import getLogger
 from typing import Any, AsyncContextManager, AsyncIterator, Sequence, Sized, TypeAlias
 from uuid import UUID
 
+from pydantic import ValidationError
+
 from innonymous.data.repositories.chats import ChatsRepository
 from innonymous.data.repositories.events import EventsRepository
 from innonymous.data.repositories.messages import MessagesRepository
@@ -36,6 +38,7 @@ from innonymous.domains.messages.entities import (
     MessageFragmentTextEntity,
     MessageUpdateEntity,
 )
+from innonymous.domains.messages.enums import MessageFragmentTextStyle
 from innonymous.domains.messages.errors import MessagesUpdateError
 from innonymous.domains.messages.interactors import MessagesInteractor
 from innonymous.domains.sessions.entities import SessionEntity
@@ -49,10 +52,14 @@ from innonymous.utils import AsyncLazyObject
 __all__ = ("Innonymous",)
 
 
-Fragments: TypeAlias = str | MessageFragmentMentionEntity | MessageFragmentLinkEntity | MessageFragmentTextEntity
+Fragment: TypeAlias = str | MessageFragmentMentionEntity | MessageFragmentLinkEntity | MessageFragmentTextEntity
 
 
 class Innonymous(AsyncLazyObject):
+    __BOLD_TEXT_PATTERN = re.compile(r"\*\*(.|\n)+\*\*")
+    __ITALIC_TEXT_PATTERN = re.compile(r"__(.|\n)+__")
+    __MONOSPACE_TEXT_PATTERN = re.compile(r"```(.|\n)+```")
+    __STRIKETHROUGH_TEXT_PATTERN = re.compile(r"~~(.|\n)+~~")
     __MENTION_PATTERN = re.compile(r"\b@[a-zA-Z0-9]\w{3,30}[a-zA-Z0-9]\b")
     __URL_WITH_TEXT_PATTERN = re.compile(
         r"\b((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+)\b\[([\w\s\d]+)\]"
@@ -265,7 +272,7 @@ class Innonymous(AsyncLazyObject):
         self, string: str
     ) -> list[MessageFragmentMentionEntity | MessageFragmentLinkEntity | MessageFragmentTextEntity]:
         is_changed = True
-        fragments: list[Fragments] = [string]
+        fragments: list[Fragment] = [string]
 
         while is_changed:
             is_changed, fragments = await self.__try_parse(fragments)
@@ -285,7 +292,7 @@ class Innonymous(AsyncLazyObject):
         return False
 
     @classmethod
-    def __try_parse_url_with_text(cls, fragment: str, fragments: list[Fragments]) -> bool:
+    def __try_parse_url_with_text(cls, fragment: str, fragments: list[Fragment]) -> bool:
         match = cls.__URL_WITH_TEXT_PATTERN.search(fragment)
 
         if match is None:
@@ -299,7 +306,7 @@ class Innonymous(AsyncLazyObject):
         try:
             entity = MessageFragmentLinkEntity(link=url, text=match.group(3))  # type: ignore[arg-type]
 
-        except Exception:
+        except ValidationError:
             return False
 
         cls.__append_if_not_empty(fragment[: match.start()], fragments)
@@ -309,7 +316,7 @@ class Innonymous(AsyncLazyObject):
         return True
 
     @classmethod
-    def __try_parse_url_without_text(cls, fragment: str, fragments: list[Fragments]) -> bool:
+    def __try_parse_url_without_text(cls, fragment: str, fragments: list[Fragment]) -> bool:
         match = cls.__URL_WITHOUT_TEXT_PATTERN.search(fragment)
 
         if match is None:
@@ -323,7 +330,7 @@ class Innonymous(AsyncLazyObject):
         try:
             entity = MessageFragmentLinkEntity(link=url)  # type: ignore[arg-type]
 
-        except Exception:
+        except ValidationError:
             return False
 
         cls.__append_if_not_empty(fragment[: match.start()], fragments)
@@ -332,7 +339,34 @@ class Innonymous(AsyncLazyObject):
 
         return True
 
-    async def __try_parse_mention(self, fragment: str, fragments: list[Fragments]) -> bool:
+    @classmethod
+    def __try_parse_text(cls, fragment: str, fragments: list[Fragment]) -> bool:
+        for pattern, style in (
+            (cls.__BOLD_TEXT_PATTERN, MessageFragmentTextStyle.BOLD),
+            (cls.__ITALIC_TEXT_PATTERN, MessageFragmentTextStyle.ITALIC),
+            (cls.__MONOSPACE_TEXT_PATTERN, MessageFragmentTextStyle.MONOSPACE),
+            (cls.__STRIKETHROUGH_TEXT_PATTERN, MessageFragmentTextStyle.STRIKETHROUGH),
+        ):
+            match = pattern.search(fragment)
+
+            if match is None:
+                continue
+
+            try:
+                entity = MessageFragmentTextEntity(text=match.string, style=style)
+
+            except ValidationError:
+                continue
+
+            cls.__append_if_not_empty(fragment[: match.start()], fragments)
+            fragments.append(entity)
+            cls.__append_if_not_empty(fragment[match.end() :], fragments)
+
+            return True
+
+        return False
+
+    async def __try_parse_mention(self, fragment: str, fragments: list[Fragment]) -> bool:
         match = self.__MENTION_PATTERN.search(fragment)
 
         if match is None:
@@ -365,11 +399,11 @@ class Innonymous(AsyncLazyObject):
 
     async def __try_parse(
         self,
-        fragments: Sequence[Fragments],
-    ) -> tuple[bool, list[Fragments]]:
+        fragments: Sequence[Fragment],
+    ) -> tuple[bool, list[Fragment]]:
         is_changed = False
 
-        updated_fragments: list[Fragments] = []
+        updated_fragments: list[Fragment] = []
         for fragment in fragments:
             if not isinstance(fragment, str):
                 updated_fragments.append(fragment)
@@ -387,10 +421,14 @@ class Innonymous(AsyncLazyObject):
                 is_changed = True
                 continue
 
+            if self.__try_parse_text(fragment, updated_fragments):
+                is_changed = True
+                continue
+
             # No success.
             updated_fragments.append(fragment)
 
-        merged_fragments: list[Fragments] = []
+        merged_fragments: list[Fragment] = []
         for fragment in updated_fragments:
             if len(merged_fragments) == 0 or not isinstance(fragment, str) or not isinstance(merged_fragments[-1], str):
                 merged_fragments.append(fragment)

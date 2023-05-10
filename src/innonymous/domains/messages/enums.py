@@ -25,3 +25,4 @@ class MessageFragmentTextStyle(str, Enum):
     NORMAL = "normal"
     ITALIC = "italic"
     MONOSPACE = "monospace"
+    STRIKETHROUGH = "STRIKETHROUGH"
