@@ -36,12 +36,14 @@ MESSAGE_MAX_CHARACTERS = 1024
 @dataclass
 class MessageFragmentMentionUserEntity:
     user: UUID = Field()
+
     type: Literal[MessageFragmentMentionType.USER] = Field(default=MessageFragmentMentionType.USER)  # noqa: A003
 
 
 @dataclass
 class MessageFragmentMentionChatEntity:
     chat: UUID = Field()
+
     type: Literal[MessageFragmentMentionType.CHAT] = Field(default=MessageFragmentMentionType.CHAT)  # noqa: A003
 
 
@@ -49,6 +51,7 @@ class MessageFragmentMentionChatEntity:
 class MessageFragmentMentionMessageEntity:
     chat: UUID = Field()
     message: UUID = Field()
+
     type: Literal[MessageFragmentMentionType.MESSAGE] = Field(default=MessageFragmentMentionType.MESSAGE)  # noqa: A003
 
 
@@ -59,12 +62,14 @@ class MessageFragmentMentionEntity:
              | MessageFragmentMentionChatEntity \
              | MessageFragmentMentionMessageEntity = Field(discriminator="type")
     # fmt: on
+
     type: Literal[MessageFragmentType.MENTION] = Field(default=MessageFragmentType.MENTION)  # noqa: A003
 
 
 @dataclass
 class MessageFragmentTextEntity:
     text: str = Field(min_length=1)
+
     style: MessageFragmentTextStyle = Field(default=MessageFragmentTextStyle.NORMAL)
     type: Literal[MessageFragmentType.TEXT] = Field(default=MessageFragmentType.TEXT)  # noqa: A003
 
@@ -72,6 +77,7 @@ class MessageFragmentTextEntity:
 @dataclass
 class MessageFragmentLinkEntity:
     link: AnyUrl = Field()
+
     text: str | None = Field(default=None, min_length=1)
     type: Literal[MessageFragmentType.LINK] = Field(default=MessageFragmentType.LINK)  # noqa: A003
 
@@ -109,6 +115,7 @@ def _validate_fragments(fragments: list[MessageFragmentEntity]) -> list[MessageF
 @dataclass
 class MessageTextBodyEntity:
     fragments: list[MessageFragmentEntity] = Field(min_items=1)
+
     type: Literal[MessageType.TEXT] = Field(default=MessageType.TEXT)  # noqa: A003
 
     @validator("fragments", always=True)
@@ -119,6 +126,7 @@ class MessageTextBodyEntity:
 @dataclass
 class MessageFilesBodyEntity:
     files: list[UUID] = Field(min_items=1, max_items=10)
+
     fragments: list[MessageFragmentEntity] = Field(default=[])
     type: Literal[MessageType.FILES] = Field(default=MessageType.FILES)  # noqa: A003
 
@@ -138,6 +146,7 @@ class MessageEntity:
     chat: UUID = Field()
     author: UUID = Field()
     body: MessageTextBodyEntity | MessageFilesBodyEntity = Field(discriminator="type")
+
     id: UUID = Field(default_factory=uuid4)  # noqa: A003
     replied_to: UUID | None = Field(default=None)
     forwarded_from: MessageForwardEntity | None = Field(default=None)
@@ -153,6 +162,7 @@ class MessageEntity:
 class MessageUpdateEntity:
     id: UUID = Field()  # noqa: A003
     chat: UUID = Field()
+
     body: MessageTextBodyEntity | MessageFilesBodyEntity | None = Field(default=None, discriminator="type")
 
 
@@ -160,6 +170,7 @@ class MessageUpdateEntity:
 class MessageCreateEntity:
     chat: UUID = Field()
     author: UUID = Field()
+
     replied_to: UUID | None = Field(default=None)
     forwarded_from: MessageForwardEntity | None = Field(default=None)
     body: MessageTextBodyEntity | MessageFilesBodyEntity | None = Field(default=None, discriminator="type")

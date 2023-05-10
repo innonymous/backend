@@ -23,36 +23,43 @@ __all__ = (
 
 class EventChatCreatedSchema(FastPydanticBaseModel):
     chat: ChatSchema = Field()
+
     type: Literal[EventType.CHAT_CREATED] = Field(default=EventType.CHAT_CREATED)  # noqa: A003
 
 
 class EventUserCreatedSchema(FastPydanticBaseModel):
     user: UserSchema = Field()
+
     type: Literal[EventType.USER_CREATED] = Field(default=EventType.USER_CREATED)  # noqa: A003
 
 
 class EventUserUpdatedSchema(FastPydanticBaseModel):
     user: UserSchema = Field()
+
     type: Literal[EventType.USER_UPDATED] = Field(default=EventType.USER_UPDATED)  # noqa: A003
 
 
 class EventUserDeletedSchema(FastPydanticBaseModel):
     user: UUID = Field()
+
     type: Literal[EventType.USER_DELETED] = Field(default=EventType.USER_DELETED)  # noqa: A003
 
 
 class EventMessageCreatedSchema(FastPydanticBaseModel):
     message: MessageSchema = Field()
+
     type: Literal[EventType.MESSAGE_CREATED] = Field(default=EventType.MESSAGE_CREATED)  # noqa: A003
 
 
 class EventMessageUpdatedSchema(FastPydanticBaseModel):
     message: MessageSchema = Field()
+
     type: Literal[EventType.MESSAGE_UPDATED] = Field(default=EventType.MESSAGE_UPDATED)  # noqa: A003
 
 
 class EventMessageDeletedSchema(FastPydanticBaseModel):
     message: UUID = Field()
+
     type: Literal[EventType.MESSAGE_DELETED] = Field(default=EventType.MESSAGE_DELETED)  # noqa: A003
 
 

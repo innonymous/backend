@@ -13,6 +13,7 @@ class TokenAccessEntity:
     user: UUID = Field()
     session: UUID = Field()
     nonce: int = Field()
+
     audience: Literal["access"] = Field(default="access")
     issued_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
     expires_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc) + timedelta(hours=1))
@@ -27,6 +28,7 @@ class TokenRefreshEntity:
     user: UUID = Field()
     session: UUID = Field()
     nonce: int = Field()
+
     audience: Literal["refresh"] = Field(default="refresh")
     issued_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
     expires_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc) + timedelta(days=30))
@@ -39,6 +41,7 @@ class TokenRefreshEntity:
 @dataclass
 class TokenCaptchaEntity:
     hash: bytes = Field()  # noqa: A003
+
     audience: Literal["captcha"] = Field(default="captcha")
     issued_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
     expires_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc) + timedelta(minutes=1))

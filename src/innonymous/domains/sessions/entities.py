@@ -10,6 +10,7 @@ __all__ = ("SessionEntity",)
 @dataclass
 class SessionEntity:
     user: UUID = Field()
+
     id: UUID = Field(default_factory=uuid4)  # noqa: A003
     nonce: int = Field(default=0)
     agent: str = Field(default="")

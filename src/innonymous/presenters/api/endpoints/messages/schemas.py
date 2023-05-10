@@ -34,17 +34,20 @@ __all__ = (
 
 class MessageFragmentMentionUserSchema(FastPydanticBaseModel):
     user: UUID = Field()
+
     type: Literal[MessageFragmentMentionType.USER] = Field(default=MessageFragmentMentionType.USER)  # noqa: A003
 
 
 class MessageFragmentMentionChatSchema(FastPydanticBaseModel):
     chat: UUID = Field()
+
     type: Literal[MessageFragmentMentionType.CHAT] = Field(default=MessageFragmentMentionType.CHAT)  # noqa: A003
 
 
 class MessageFragmentMentionMessageSchema(FastPydanticBaseModel):
     chat: UUID = Field()
     message: UUID = Field()
+
     type: Literal[MessageFragmentMentionType.MESSAGE] = Field(default=MessageFragmentMentionType.MESSAGE)  # noqa: A003
 
 
@@ -54,17 +57,20 @@ class MessageFragmentMentionSchema(FastPydanticBaseModel):
              | MessageFragmentMentionChatSchema \
              | MessageFragmentMentionMessageSchema = Field(discriminator="type")
     # fmt: on
+
     type: Literal[MessageFragmentType.MENTION] = Field(default=MessageFragmentType.MENTION)  # noqa: A003
 
 
 class MessageFragmentTextSchema(FastPydanticBaseModel):
     text: str = Field()
+
     style: MessageFragmentTextStyle = Field(default=MessageFragmentTextStyle.NORMAL)
     type: Literal[MessageFragmentType.TEXT] = Field(default=MessageFragmentType.TEXT)  # noqa: A003
 
 
 class MessageFragmentLinkSchema(FastPydanticBaseModel):
     link: AnyUrl = Field()
+
     text: str | None = Field(default=None)
     type: Literal[MessageFragmentType.LINK] = Field(default=MessageFragmentType.LINK)  # noqa: A003
 
@@ -77,11 +83,13 @@ MessageFragmentSchema = Annotated[
 
 class MessageTextBodySchema(FastPydanticBaseModel):
     fragments: list[MessageFragmentSchema] = Field()
+
     type: Literal[MessageType.TEXT] = Field(default=MessageType.TEXT)  # noqa: A003
 
 
 class MessageFilesBodySchema(FastPydanticBaseModel):
     files: list[UUID] = Field()
+
     fragments: list[MessageFragmentSchema] = Field(default=[])
     type: Literal[MessageType.FILES] = Field(default=MessageType.FILES)  # noqa: A003
 
