@@ -78,6 +78,7 @@ async def filter(  # noqa: A001
     response_model=UserSchema,
     status_code=status.HTTP_201_CREATED,
     responses={
+        status.HTTP_409_CONFLICT: {"model": ErrorSchema},
         status.HTTP_400_BAD_REQUEST: {"model": ErrorSchema},
         status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": ErrorSchema},
     },
