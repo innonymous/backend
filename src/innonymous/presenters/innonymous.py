@@ -60,12 +60,12 @@ class Innonymous(AsyncLazyObject):
     __ITALIC_TEXT_PATTERN = re.compile(r"__(.|\n)+__")
     __MONOSPACE_TEXT_PATTERN = re.compile(r"```(.|\n)+```")
     __STRIKETHROUGH_TEXT_PATTERN = re.compile(r"~~(.|\n)+~~")
-    __MENTION_PATTERN = re.compile(r"\b@[a-zA-Z0-9]\w{3,30}[a-zA-Z0-9]\b")
+    __MENTION_PATTERN = re.compile(r"(^|\s)@[a-zA-Z0-9]\w{3,30}[a-zA-Z0-9](\s|$)")
     __URL_WITH_TEXT_PATTERN = re.compile(
-        r"\b((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+)\b\[([\w\s\d]+)\]"
+        r"\[(.+)\]\(\s*((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:\/?#[\]@!\$&'\(\)\*\+,;=.]+)\s*\)"
     )
     __URL_WITHOUT_TEXT_PATTERN = re.compile(
-        r"\b((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+)\b"
+        r"(^|\s)((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:\/?#[\]@!\$&'\(\)\*\+,;=.]+)(\s|$)"
     )
 
     async def __ainit__(self, *, settings: Settings | None = None) -> None:
@@ -277,11 +277,17 @@ class Innonymous(AsyncLazyObject):
         while is_changed:
             is_changed, fragments = await self.__try_parse(fragments)
 
-        for i, fragment in enumerate(fragments):
-            if isinstance(fragment, str):
-                fragments[i] = MessageFragmentTextEntity(text=fragment)
+        result = []
+        for fragment in fragments:
+            if not isinstance(fragment, str):
+                result.append(fragment)
+                continue
 
-        return fragments  # type: ignore[return-value]
+            text = fragment.strip()
+            if len(text) > 1:
+                result.append(MessageFragmentTextEntity(text=text))
+
+        return result
 
     @staticmethod
     def __append_if_not_empty(value: Sized, target: list[Any]) -> bool:
@@ -299,12 +305,12 @@ class Innonymous(AsyncLazyObject):
             return False
 
         # Use https by default.
-        url = match.group(1)
+        url = match.group(2).strip()
         if not url.startswith("http"):
             url = "https://" + url
 
         try:
-            entity = MessageFragmentLinkEntity(link=url, text=match.group(3))  # type: ignore[arg-type]
+            entity = MessageFragmentLinkEntity(link=url, text=match.group(1).strip())  # type: ignore[arg-type]
 
         except ValidationError:
             return False
@@ -323,7 +329,7 @@ class Innonymous(AsyncLazyObject):
             return False
 
         # Use https by default.
-        url = match.string
+        url = match.group().strip()
         if not url.startswith("http"):
             url = "https://" + url
 
@@ -353,7 +359,7 @@ class Innonymous(AsyncLazyObject):
                 continue
 
             try:
-                entity = MessageFragmentTextEntity(text=match.string, style=style)
+                entity = MessageFragmentTextEntity(text=match.group().strip(), style=style)
 
             except ValidationError:
                 continue
@@ -376,13 +382,13 @@ class Innonymous(AsyncLazyObject):
 
         try:
             # Check if this is users.
-            user = await self.get_user(alias=match.string[1:])
+            user = await self.get_user(alias=match.group().strip()[1:])
             mention = MessageFragmentMentionUserEntity(user=user.id)
 
         except UsersNotFoundError:
             try:
                 # Check if this is chat.
-                chat = await self.get_chat(alias=match.string[1:])
+                chat = await self.get_chat(alias=match.group().strip()[1:])
                 mention = MessageFragmentMentionChatEntity(chat=chat.id)
 
             except ChatsNotFoundError:
