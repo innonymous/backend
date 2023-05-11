@@ -25,12 +25,14 @@ async def not_found(
 
 
 @application.exception_handler(CaptchaInvalidError)  # type: ignore[has-type]
+async def bad_request(_: Request, exception: CaptchaInvalidError) -> ORJSONResponse:
+    return ORJSONResponse(content=exception.to_dict(include_traceback=False), status_code=status.HTTP_400_BAD_REQUEST)
+
+
 @application.exception_handler(UsersAlreadyExistsError)  # type: ignore[has-type]
 @application.exception_handler(ChatsAlreadyExistsError)  # type: ignore[has-type]
-async def bad_request(
-    _: Request, exception: CaptchaInvalidError | UsersAlreadyExistsError | ChatsAlreadyExistsError
-) -> ORJSONResponse:
-    return ORJSONResponse(content=exception.to_dict(include_traceback=False), status_code=status.HTTP_400_BAD_REQUEST)
+async def conflict(_: Request, exception: UsersAlreadyExistsError | ChatsAlreadyExistsError) -> ORJSONResponse:
+    return ORJSONResponse(content=exception.to_dict(include_traceback=False), status_code=status.HTTP_409_CONFLICT)
 
 
 @application.exception_handler(APIUnauthorizedError)  # type: ignore[has-type]
