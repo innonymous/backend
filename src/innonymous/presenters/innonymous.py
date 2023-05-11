@@ -57,10 +57,10 @@ Fragment: TypeAlias = str | MessageFragmentMentionEntity | MessageFragmentLinkEn
 
 
 class Innonymous(AsyncLazyObject):
-    __BOLD_TEXT_PATTERN = re.compile(r"\*\*(.|\n)+\*\*")
-    __ITALIC_TEXT_PATTERN = re.compile(r"__(.|\n)+__")
-    __MONOSPACE_TEXT_PATTERN = re.compile(r"```(.|\n)+```")
-    __STRIKETHROUGH_TEXT_PATTERN = re.compile(r"~~(.|\n)+~~")
+    __BOLD_TEXT_PATTERN = re.compile(r"\*\*((.|\n)+)\*\*")
+    __ITALIC_TEXT_PATTERN = re.compile(r"__((.|\n)+)__")
+    __MONOSPACE_TEXT_PATTERN = re.compile(r"```((.|\n)+)```")
+    __STRIKETHROUGH_TEXT_PATTERN = re.compile(r"~~((.|\n)+)~~")
     __MENTION_PATTERN = re.compile(r"(^|\s)@[a-zA-Z0-9]\w{3,30}[a-zA-Z0-9](\s|$)")
     __MESSAGE_MENTION_PATTERN = re.compile(
         r"(^|\s)@([a-zA-Z0-9]\w{3,30}[a-zA-Z0-9])\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-f"
@@ -364,7 +364,7 @@ class Innonymous(AsyncLazyObject):
                 continue
 
             try:
-                entity = MessageFragmentTextEntity(text=match.group().strip(), style=style)
+                entity = MessageFragmentTextEntity(text=match.group(1).strip(), style=style)
 
             except ValidationError:
                 continue
