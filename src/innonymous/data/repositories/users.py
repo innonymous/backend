@@ -90,13 +90,8 @@ class UsersRepository(AsyncLazyObject):
         if search is not None:
             sort.append(("textScore", {"$meta": "textScore"}))
 
-        # Only updated_after.
-        if updated_after is not None and updated_before is None:
-            sort.append(("updated_at", ASCENDING))
-
-        # Only updated_before.
-        if updated_before is not None and updated_after is None:
-            sort.append(("updated_at", DESCENDING))
+        # Sorting.
+        sort.append(("updated_at", ASCENDING if updated_after is not None else DESCENDING))
 
         try:
             async for entity in self.__collection.find(
