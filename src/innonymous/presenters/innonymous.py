@@ -34,6 +34,7 @@ from innonymous.domains.messages.entities import (
     MessageFragmentLinkEntity,
     MessageFragmentMentionChatEntity,
     MessageFragmentMentionEntity,
+    MessageFragmentMentionMessageEntity,
     MessageFragmentMentionUserEntity,
     MessageFragmentTextEntity,
     MessageUpdateEntity,
@@ -61,6 +62,10 @@ class Innonymous(AsyncLazyObject):
     __MONOSPACE_TEXT_PATTERN = re.compile(r"```(.|\n)+```")
     __STRIKETHROUGH_TEXT_PATTERN = re.compile(r"~~(.|\n)+~~")
     __MENTION_PATTERN = re.compile(r"(^|\s)@[a-zA-Z0-9]\w{3,30}[a-zA-Z0-9](\s|$)")
+    __MESSAGE_MENTION_PATTERN = re.compile(
+        r"(^|\s)@([a-zA-Z0-9]\w{3,30}[a-zA-Z0-9])\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-f"
+        r"A-F]{12})(\s|$)"
+    )
     __URL_WITH_TEXT_PATTERN = re.compile(
         r"\[(.+)\]\(\s*((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:\/?#[\]@!\$&'\(\)\*\+,;=.]+)\s*\)"
     )
@@ -403,6 +408,26 @@ class Innonymous(AsyncLazyObject):
 
         return True
 
+    async def __try_parse_message_mention(self, fragment: str, fragments: list[Fragment]) -> bool:
+        match = self.__MESSAGE_MENTION_PATTERN.search(fragment)
+
+        if match is None:
+            return False
+
+        try:
+            # Check if this is chat.
+            chat = await self.get_chat(alias=match.group(2).strip())
+            mention = MessageFragmentMentionMessageEntity(chat=chat.id, message=UUID(match.group(3).strip()))
+
+        except (ChatsNotFoundError, ValueError):
+            return False
+
+        self.__append_if_not_empty(fragment[: match.start()], fragments)
+        fragments.append(MessageFragmentMentionEntity(mention=mention))
+        self.__append_if_not_empty(fragment[match.end() :], fragments)
+
+        return True
+
     async def __try_parse(
         self,
         fragments: Sequence[Fragment],
@@ -420,6 +445,10 @@ class Innonymous(AsyncLazyObject):
                 continue
 
             if self.__try_parse_url_without_text(fragment, updated_fragments):
+                is_changed = True
+                continue
+
+            if await self.__try_parse_message_mention(fragment, updated_fragments):
                 is_changed = True
                 continue
 
