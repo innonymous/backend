@@ -282,17 +282,11 @@ class Innonymous(AsyncLazyObject):
         while is_changed:
             is_changed, fragments = await self.__try_parse(fragments)
 
-        result = []
-        for fragment in fragments:
-            if not isinstance(fragment, str):
-                result.append(fragment)
-                continue
+        for i, fragment in enumerate(fragments):
+            if isinstance(fragment, str):
+                fragments[i] = MessageFragmentTextEntity(text=fragment)
 
-            text = fragment.strip()
-            if len(text) > 1:
-                result.append(MessageFragmentTextEntity(text=text))
-
-        return result
+        return fragments  # type: ignore[return-value]
 
     @staticmethod
     def __append_if_not_empty(value: Sized, target: list[Any]) -> bool:
@@ -344,9 +338,9 @@ class Innonymous(AsyncLazyObject):
         except ValidationError:
             return False
 
-        cls.__append_if_not_empty(fragment[: match.start()], fragments)
+        cls.__append_if_not_empty(fragment[: match.start() + len(match.group(1))], fragments)
         fragments.append(entity)
-        cls.__append_if_not_empty(fragment[match.end() :], fragments)
+        cls.__append_if_not_empty(fragment[match.end() - len(match.group(4)) :], fragments)
 
         return True
 
@@ -402,9 +396,9 @@ class Innonymous(AsyncLazyObject):
         if mention is None:
             return False
 
-        self.__append_if_not_empty(fragment[: match.start()], fragments)
+        self.__append_if_not_empty(fragment[: match.start() + len(match.group(1))], fragments)
         fragments.append(MessageFragmentMentionEntity(mention=mention))
-        self.__append_if_not_empty(fragment[match.end() :], fragments)
+        self.__append_if_not_empty(fragment[match.end() - len(match.group(2)) :], fragments)
 
         return True
 
@@ -422,9 +416,9 @@ class Innonymous(AsyncLazyObject):
         except (ChatsNotFoundError, ValueError):
             return False
 
-        self.__append_if_not_empty(fragment[: match.start()], fragments)
+        self.__append_if_not_empty(fragment[: match.start() + len(match.group(1))], fragments)
         fragments.append(MessageFragmentMentionEntity(mention=mention))
-        self.__append_if_not_empty(fragment[match.end() :], fragments)
+        self.__append_if_not_empty(fragment[match.end() - len(match.group(4)) :], fragments)
 
         return True
 
