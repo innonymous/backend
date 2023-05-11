@@ -15,7 +15,7 @@ class CaptchaInteractor:
     LENGTH = 4
     ALGORITHM = "SHA256"
     # Use a-z, 0-9, except similar characters.
-    ALPHABET = "".join(set(string.ascii_lowercase + string.digits).difference(set("9q0ocda17uv6b")))
+    ALPHABET = "".join(set(string.ascii_lowercase + string.digits).difference(set("9q0ocda17uv6bil2z5s")))
 
     def __init__(self, key: bytes, captcha_repository: CaptchaRepository, tokens_interactor: TokensInteractor) -> None:
         self.__key = key
