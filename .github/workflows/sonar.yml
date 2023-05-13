@@ -26,4 +26,3 @@ jobs:
           -Dsonar.projectKey=innonymous_backend
           -Dsonar.organization=innonymous
           -Dsonar.projectBaseDir=./src/innonymous
-          -Dsonar.tests=./src/tests
