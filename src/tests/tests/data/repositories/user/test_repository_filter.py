@@ -47,16 +47,16 @@ def user_entity_to_dict(user: UserEntity) -> dict[str, Any]:
         "favorites": [id_.hex for id_ in user.favorites],
         "name": user.name,
         "about": user.about,
-        "updated_at": user.updated_at
+        "updated_at": user.updated_at,
     }
 
 
 def assert_collection_find_called_with_correct_args(
-        call_args: tuple,
-        expected_search: SearchQuery,
-        expected_sort: SortQuery,
-        expected_limit: int,
-        expected_projection: ProjectionQuery,
+    call_args: tuple,
+    expected_search: SearchQuery,
+    expected_sort: SortQuery,
+    expected_limit: int,
+    expected_projection: ProjectionQuery,
 ) -> None:
     args, kwargs = call_args
     actual_search, *_ = args
@@ -72,10 +72,10 @@ def assert_collection_find_called_with_correct_args(
 @pytest.mark.user
 class TestMongoUsersRepositoryFilterMethod:
     async def test_empty_iterator(
-            self,
-            mocker: MockFixture,
-            user_storage_and_collection: StorageAndCollection,
-            mock_motor_cursor_factory: Callable,
+        self,
+        mocker: MockFixture,
+        user_storage_and_collection: StorageAndCollection,
+        mock_motor_cursor_factory: Callable,
     ) -> None:
         """Basically mocks demo."""
 
@@ -88,11 +88,11 @@ class TestMongoUsersRepositoryFilterMethod:
         assert collected_items == []
 
     async def test_filter_by_time_only(
-            self,
-            mocker: MockFixture,
-            user_storage_and_collection: StorageAndCollection,
-            user_entity_factory: UserEntityProtocol,
-            mock_motor_cursor_factory: Callable,
+        self,
+        mocker: MockFixture,
+        user_storage_and_collection: StorageAndCollection,
+        user_entity_factory: UserEntityProtocol,
+        mock_motor_cursor_factory: Callable,
     ) -> None:
         start_time = datetime.now(tz=timezone.utc)
         mid_time = start_time + timedelta(seconds=5)
@@ -106,12 +106,7 @@ class TestMongoUsersRepositoryFilterMethod:
         cursor = mock_motor_cursor_factory([user_entity_to_dict(user) for user in expected_users])
         mock_collection.find = mocker.Mock(return_value=cursor)
 
-        expected_search_query: SearchQuery = {
-            "updated_at": {
-                "$gte": start_time,
-                "$lte": end_time
-            }
-        }
+        expected_search_query: SearchQuery = {"updated_at": {"$gte": start_time, "$lte": end_time}}
         expected_sort_query: SortQuery = [("updated_at", ASCENDING)]
         expected_limit = 0
         expected_projection_query: ProjectionQuery = None
