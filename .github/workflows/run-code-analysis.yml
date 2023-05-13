@@ -26,3 +26,15 @@ jobs:
 
       - name: Run all tests
         run: make test
+
+      - name: SonarCloud Scan
+        uses: sonarsource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args:
+            -Dsonar.projectKey=innonymous_backend
+            -Dsonar.organization=innonymous
+            -Dsonar.projectBaseDir=./src/innonymous
+            -Dsonar.python.coverage.reportPaths=coverage.xml
