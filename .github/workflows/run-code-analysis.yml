@@ -36,5 +36,6 @@ jobs:
           args:
             -Dsonar.projectKey=innonymous_backend
             -Dsonar.organization=innonymous
-            -Dsonar.projectBaseDir=./src/innonymous
+            -Dsonar.sources=./src/innonymous
+            -Dsonar.tests=./src/tests
             -Dsonar.python.coverage.reportPaths=coverage.xml
