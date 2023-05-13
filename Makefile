@@ -12,7 +12,7 @@ server:
 ###--TEST--#############################################################################################################
 
 test:
-	pytest --force-testdox --showlocals --cov=innonymous --tb=native ./src/tests/
+	pytest --force-testdox --showlocals --cov-report term --cov-report xml:coverage.xml --cov=innonymous --tb=native ./src/tests/
 
 ########################################################################################################################
 
