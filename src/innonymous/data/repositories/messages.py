@@ -84,13 +84,8 @@ class MessagesRepository(AsyncLazyObject):
         if search is not None:
             sort.append(("textScore", {"$meta": "textScore"}))
 
-        # Only created_after.
-        if created_after is not None and created_before is None:
-            sort.append(("created_at", ASCENDING))
-
-        # Only created_before.
-        if created_before is not None and created_after is None:
-            sort.append(("created_at", DESCENDING))
+        # Sorting.
+        sort.append(("created_at", ASCENDING if created_after is not None else DESCENDING))
 
         try:
             async for entity in collection.find(

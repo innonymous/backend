@@ -1,3 +1,5 @@
+import importlib.metadata
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
@@ -15,7 +17,7 @@ __all__ = ("application", "settings", "innonymous", "tokens_interactor", "captch
 
 application = FastAPI(
     title="Innonymous API",
-    version="2.0.0",
+    version=importlib.metadata.version("innonymous"),
     default_response_class=ORJSONResponse,
     contact={"name": "Ivan Izmailov", "url": "https://t.me/smthngslv", "email": "smthngslv@optic.xyz"},
 )

@@ -61,6 +61,7 @@ async def filter(  # noqa: A001
     response_model=ChatSchema,
     status_code=status.HTTP_201_CREATED,
     responses={
+        status.HTTP_409_CONFLICT: {"model": ErrorSchema},
         status.HTTP_401_UNAUTHORIZED: {"model": ErrorSchema},
         status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": ErrorSchema},
     },

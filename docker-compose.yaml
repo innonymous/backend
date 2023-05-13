@@ -38,6 +38,11 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: innonymous
       MONGO_INITDB_ROOT_PASSWORD: innonymous
+    volumes:
+      - mongodb:/data/db
     ports:
       - "27017:27017"
     <<: *common
+
+volumes:
+  mongodb:

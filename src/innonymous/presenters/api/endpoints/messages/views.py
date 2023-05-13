@@ -3,7 +3,12 @@ from uuid import UUID
 
 from fastapi import Body, Depends, Path, Query, status
 
-from innonymous.domains.messages.entities import MessageCreateEntity, MessageUpdateEntity
+from innonymous.domains.messages.entities import (
+    MessageCreateEntity,
+    MessageFilesBodyEntity,
+    MessageTextBodyEntity,
+    MessageUpdateEntity,
+)
 from innonymous.domains.users.entities import UserEntity
 from innonymous.presenters.api.application import innonymous
 from innonymous.presenters.api.dependencies import get_current_user
@@ -63,8 +68,20 @@ async def filter(  # noqa: A001
 async def create(
     *, chat: UUID = Path(), body: MessageCreateSchema = Body(), user: UserEntity = Depends(get_current_user)
 ) -> MessageSchema:
+    kwargs = body.dict()
+
+    # If user provides string or files.
+    if isinstance(body.body, str) or (body.body is None and body.files is not None):
+        fragments = await innonymous.string_to_fragments(body.body) if body.body is not None else []
+
+        if body.files is not None:
+            kwargs["body"] = MessageFilesBodyEntity(fragments=fragments, files=body.files)
+
+        else:
+            kwargs["body"] = MessageTextBodyEntity(fragments=fragments)
+
     return MessageSchema.from_entity(
-        await innonymous.create_message(MessageCreateEntity(chat=chat, author=user.id, **body.dict()))
+        await innonymous.create_message(MessageCreateEntity(chat=chat, author=user.id, **kwargs))
     )
 
 

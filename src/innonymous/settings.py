@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from pydantic import AmqpDsn, BaseSettings, Field, MongoDsn
+from pydantic import AmqpDsn, AnyUrl, BaseSettings, Field
 
 __all__ = ("Settings",)
 
@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     BROKER_URL: AmqpDsn = Field(default="amqp://innonymous:innonymous@localhost")
     BROKER_EXCHANGE: str = Field(default="events")
 
-    DATABASE_URL: MongoDsn = Field(default="mongodb://innonymous:innonymous@localhost")
+    DATABASE_URL: AnyUrl = Field(default="mongodb://innonymous:innonymous@localhost")
     MAIN_DATABASE_NAME: str = Field(default="innonymous-main")
     MESSAGES_DATABASE_NAME: str = Field(default="innonymous-chats")
 

@@ -16,7 +16,7 @@ class UserEntity:
     id: UUID = Field(default_factory=uuid4)  # noqa: A003
     favorites: list[UUID] = Field(default=[])
     name: str = Field(default="", regex=r"^.{0,64}$")
-    about: str = Field(default="", regex=r"^.{0,128}$")
+    about: str = Field(default="", regex=r"^(.|\n){0,128}$")
     updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
 
     @validator("updated_at", always=True)
@@ -31,7 +31,7 @@ class UserUpdateEntity:
     favorites: list[UUID] | None = Field(default=None)
     name: str | None = Field(default=None, regex=r"^.{0,64}$")
     alias: str | None = Field(default=None, regex=r"^[a-zA-Z0-9]\w{3,30}[a-zA-Z0-9]$")
-    about: str | None = Field(default=None, regex=r"^.{0,128}$")
+    about: str | None = Field(default=None, regex=r"^(.|\n){0,128}$")
     password: str | None = Field(default=None, regex=r"^.{8,64}$")
 
 

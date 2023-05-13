@@ -25,6 +25,7 @@ class ChatSchema(FastPydanticBaseModel):
 
 class ChatInfoSchema(FastPydanticBaseModel):
     alias: str = Field()
+
     name: str = Field(default="")
     about: str = Field(default="")
 
