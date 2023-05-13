@@ -1,0 +1,29 @@
+name: SonarCloud Scan
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+  
+jobs:
+  sonarcloud:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        projectBaseDir: src/innonymous
+        fetch-depth: 0
+    - name: SonarCloud Scan
+      uses: sonarsource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      with:
+        args:
+          -Dsonar.projectKey=innonymous_backend
+          -Dsonar.organization=innonymous
+          -Dsonar.projectBaseDir=./src/innonymous
+          -Dsonar.tests=./src/tests
