@@ -21,6 +21,7 @@ def assert_delete_one_with_correct_query(call_args: tuple, expected_query: dict[
 
 
 @pytest.mark.mongo_repo
+@pytest.mark.user
 class TestMongoUsersRepositoryDeleteMethod:
     @pytest.mark.parametrize("expected_is_deleted,deleted_count", [(True, 1), (False, 0)])
     async def test_successful_delete(

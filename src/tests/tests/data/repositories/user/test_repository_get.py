@@ -36,6 +36,7 @@ def assert_find_one_with_correct_query(call_args: tuple, expected_query: dict[st
 
 
 @pytest.mark.mongo_repo
+@pytest.mark.user
 class TestMongoUsersRepositoryGetMethod:
     async def test_get_by_id(
         self,

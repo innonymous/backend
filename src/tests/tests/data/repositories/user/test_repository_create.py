@@ -32,6 +32,7 @@ def assert_successful_create_with_right_args(call_args: tuple, expected_user: Us
 
 
 @pytest.mark.mongo_repo
+@pytest.mark.user
 class TestMongoUsersRepositoryCreateMethod:
     async def test_successful_create(
         self,

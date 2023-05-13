@@ -53,6 +53,7 @@ def assert_update_one_with_correct_queries(
 
 
 @pytest.mark.mongo_repo
+@pytest.mark.user
 class TestMongoUsersRepositoryUpdateMethod:
     async def test_successful_update(
         self,

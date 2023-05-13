@@ -69,6 +69,7 @@ def assert_collection_find_called_with_correct_args(
 
 
 @pytest.mark.mongo_repo
+@pytest.mark.user
 class TestMongoUsersRepositoryFilterMethod:
     async def test_empty_iterator(
             self,
