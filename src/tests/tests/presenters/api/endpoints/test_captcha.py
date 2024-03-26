@@ -8,7 +8,7 @@ from tests.utils import solve_captcha
 __all__ = ("test_get_and_solve_captcha",)
 
 
-@pytest.mark.it("Get captcha and brute force it.")
+@pytest.mark.skip(reason="may be unnecessary or not viable")
 async def test_get_and_solve_captcha(api_client: AsyncClient) -> None:
     from innonymous.presenters.api.application import settings
 

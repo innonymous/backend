@@ -11,7 +11,7 @@ from innonymous.domains.users.errors import UsersNotFoundError, UsersAlreadyExis
 from innonymous.domains.users.interactors import UsersInteractor
 from innonymous.domains.users.entities import UserUpdateEntity, UserEntity
 
-from tests.tests.domains.users.conftest import UserEntityProtocol
+from tests.conftest import UserEntityProtocol
 
 __all__ = ()
 
@@ -67,7 +67,7 @@ class TestUsersInteractorUpdateMethod:
         )
 
         mocker.patch.object(users_repository, "get", return_value=original_user)
-        mocker.patch.object(users_repository, "update")
+        update_method = mocker.patch.object(users_repository, "update")
 
         user_update_entity = UserUpdateEntity(
             id=original_user.id,
@@ -92,8 +92,9 @@ class TestUsersInteractorUpdateMethod:
         assert expected_updated_user.about == actual_updated_user.about
         assert expected_updated_user.updated_at == actual_updated_user.updated_at
 
+        update_method.assert_called_once()
         assert_successful_update_with_correct_args(
-            users_repository.update.call_args,
+            update_method.call_args,
             {
                 "old_updated_at": original_user.updated_at,
                 "id": original_user.id,
@@ -109,7 +110,7 @@ class TestUsersInteractorUpdateMethod:
     ) -> None:
         original_user = user_entity_factory()
         mocker.patch.object(users_repository, "get", return_value=original_user)
-        mocker.patch.object(users_repository, "update", side_effect=UsersAlreadyExistsError())
+        update_method = mocker.patch.object(users_repository, "update", side_effect=UsersAlreadyExistsError())
 
         user_update_entity = UserUpdateEntity(id=original_user.id, alias="duplicate")
 
@@ -117,8 +118,9 @@ class TestUsersInteractorUpdateMethod:
         with pytest.raises(UsersAlreadyExistsError):
             _ = await interactor.update(user_update_entity)
 
+        update_method.assert_called_once()
         assert_duplicate_alias_with_correct_args(
-            users_repository.update.call_args,
+            update_method.call_args,
             {
                 "id": original_user.id,
                 "alias": user_update_entity.alias,
@@ -130,7 +132,7 @@ class TestUsersInteractorUpdateMethod:
 
     async def test_original_user_not_found(self, mocker: MockFixture, users_repository: UsersRepository) -> None:
         mocker.patch.object(users_repository, "get", side_effect=UsersNotFoundError())
-        mocker.patch.object(users_repository, "update")
+        update_method = mocker.patch.object(users_repository, "update")
 
         user_update_entity = UserUpdateEntity(id=uuid4())
 
@@ -138,4 +140,4 @@ class TestUsersInteractorUpdateMethod:
         with pytest.raises(UsersNotFoundError):
             _ = await interactor.update(user_update_entity)
 
-        users_repository.update.assert_not_called()
+        update_method.assert_not_called()
