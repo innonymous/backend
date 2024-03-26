@@ -13,11 +13,11 @@ from innonymous.domains.messages.enums import (
 )
 
 __all__ = (
+    "validate_fragments",
     "MessageTextBodyEntity",
     "MessageFilesBodyEntity",
     "MessageEntity",
     "MessageUpdateEntity",
-    "MESSAGE_MAX_CHARACTERS",
     "MessageFragmentMentionUserEntity",
     "MessageFragmentMentionChatEntity",
     "MessageFragmentMentionMessageEntity",
@@ -28,9 +28,6 @@ __all__ = (
     "MessageCreateEntity",
     "MessageForwardEntity",
 )
-
-
-MESSAGE_MAX_CHARACTERS = 1024
 
 
 @dataclass
@@ -88,7 +85,9 @@ MessageFragmentEntity = Annotated[
 ]
 
 
-def _validate_fragments(fragments: list[MessageFragmentEntity]) -> list[MessageFragmentEntity]:
+def validate_fragments(
+        fragments: list[MessageFragmentEntity], *, max_length: int = 1024
+) -> list[MessageFragmentEntity]:
     length = 0
 
     for fragment in fragments:
@@ -99,13 +98,9 @@ def _validate_fragments(fragments: list[MessageFragmentEntity]) -> list[MessageF
             length += len(fragment.link) if fragment.text is None else len(fragment.text)
 
         elif isinstance(fragment, MessageFragmentMentionEntity):
-            if isinstance(fragment.mention, MessageFragmentMentionUserEntity | MessageFragmentMentionChatEntity):
-                length += 64
+            length += 16
 
-            elif isinstance(fragment.mention, MessageFragmentMentionMessageEntity):
-                length += 96
-
-        if length > MESSAGE_MAX_CHARACTERS:
+        if length > max_length:
             message = "Max length of the message is 1024 characters."
             raise ValueError(message)
 
